@@ -8,22 +8,24 @@
 
 /* Begin PBXBuildFile section */
 		EB1B3E9C223C1D5C00D6F433 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB1B3E9B223C1D5C00D6F433 /* AppDelegate.swift */; };
-		EB1B3E9E223C1D5C00D6F433 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB1B3E9D223C1D5C00D6F433 /* ViewController.swift */; };
 		EB1B3EA1223C1D5C00D6F433 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = EB1B3E9F223C1D5C00D6F433 /* Main.storyboard */; };
 		EB1B3EA4223C1D5C00D6F433 /* Inspira.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = EB1B3EA2223C1D5C00D6F433 /* Inspira.xcdatamodeld */; };
 		EB1B3EA6223C1D6600D6F433 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EB1B3EA5223C1D6600D6F433 /* Assets.xcassets */; };
 		EB1B3EA9223C1D6700D6F433 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = EB1B3EA7223C1D6700D6F433 /* LaunchScreen.storyboard */; };
+		EB1B3EB1223C2A2800D6F433 /* QuoteCollectionTableViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB1B3EB0223C2A2800D6F433 /* QuoteCollectionTableViewController.swift */; };
+		EB1B3EB3223C2B2800D6F433 /* QuoteDetailViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB1B3EB2223C2B2800D6F433 /* QuoteDetailViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		EB1B3E98223C1D5C00D6F433 /* Inspira.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Inspira.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		EB1B3E9B223C1D5C00D6F433 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		EB1B3E9D223C1D5C00D6F433 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
 		EB1B3EA0223C1D5C00D6F433 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		EB1B3EA3223C1D5C00D6F433 /* Inspira.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = Inspira.xcdatamodel; sourceTree = "<group>"; };
 		EB1B3EA5223C1D6600D6F433 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		EB1B3EA8223C1D6700D6F433 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		EB1B3EAA223C1D6700D6F433 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		EB1B3EB0223C2A2800D6F433 /* QuoteCollectionTableViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuoteCollectionTableViewController.swift; sourceTree = "<group>"; };
+		EB1B3EB2223C2B2800D6F433 /* QuoteDetailViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuoteDetailViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -56,9 +58,10 @@
 		EB1B3E9A223C1D5C00D6F433 /* Inspira */ = {
 			isa = PBXGroup;
 			children = (
+				EB1B3EB0223C2A2800D6F433 /* QuoteCollectionTableViewController.swift */,
 				EB1B3E9B223C1D5C00D6F433 /* AppDelegate.swift */,
-				EB1B3E9D223C1D5C00D6F433 /* ViewController.swift */,
 				EB1B3E9F223C1D5C00D6F433 /* Main.storyboard */,
+				EB1B3EB2223C2B2800D6F433 /* QuoteDetailViewController.swift */,
 				EB1B3EA5223C1D6600D6F433 /* Assets.xcassets */,
 				EB1B3EA7223C1D6700D6F433 /* LaunchScreen.storyboard */,
 				EB1B3EAA223C1D6700D6F433 /* Info.plist */,
@@ -138,8 +141,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				EB1B3E9E223C1D5C00D6F433 /* ViewController.swift in Sources */,
+				EB1B3EB1223C2A2800D6F433 /* QuoteCollectionTableViewController.swift in Sources */,
 				EB1B3EA4223C1D5C00D6F433 /* Inspira.xcdatamodeld in Sources */,
+				EB1B3EB3223C2B2800D6F433 /* QuoteDetailViewController.swift in Sources */,
 				EB1B3E9C223C1D5C00D6F433 /* AppDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
