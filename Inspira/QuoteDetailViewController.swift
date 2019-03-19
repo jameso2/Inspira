@@ -11,13 +11,13 @@ import CoreData
 
 class QuoteDetailViewController: UIViewController, UITextFieldDelegate {
     
-    var quote = QuoteInfo() {
+    var quote: Quote? {
         didSet {
-            quoteText.text = quote.text
-            creator.text = quote.creator
-            descriptionOfHowFound.text = quote.descriptionOfHowFound
-            interpretation.text = quote.interpretation
-            if let imageData = quote.imageData {
+            quoteText.text = quote?.text
+            creator.text = quote?.creator
+            descriptionOfHowFound.text = quote?.descriptionOfHowFound
+            interpretation.text = quote?.interpretation
+            if let imageData = quote?.imageData {
                 imageView.image = UIImage(data: imageData)
                 imageView.sizeToFit()
             }
@@ -34,29 +34,34 @@ class QuoteDetailViewController: UIViewController, UITextFieldDelegate {
     
     
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-        if textField == quoteText {
-            quote.text = quoteText.text
-        } else if textField == creator {
-            quote.creator = creator.text
-        } else if textField == descriptionOfHowFound {
-            quote.descriptionOfHowFound = descriptionOfHowFound.text
-        } else {
-            quote.interpretation = interpretation.text
-        }
         textField.resignFirstResponder()
         return true
     }
     
+    private func setAttributes(for quote: Quote, in context: NSManagedObjectContext) {
+        quote.text = quoteText.text
+        quote.creator = creator.text
+        quote.descriptionOfHowFound = descriptionOfHowFound.text
+        quote.interpretation = interpretation.text
+        quote.imageData = imageView.image?.jpegData(compressionQuality: 1.0)
+        try? context.save()
+    }
+    
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        if let quoteToSave = quote.text, !quoteToSave.isEmpty {
+        // TODO: Instead of happening when view will disappear, the code
+        // below should execute when the edit mode is toggled off
+        if let quoteToSave = quoteText.text, !quoteToSave.isEmpty {
             if let context = container?.viewContext {
-                let newQuote = Quote(context: context)
-                newQuote.text = quote.text
-                newQuote.creator = quote.creator
-                newQuote.descriptionOfHowFound = quote.descriptionOfHowFound
-                newQuote.interpretation = quote.interpretation
+                if let quoteToUpdate = quote {
+                    setAttributes(for: quoteToUpdate, in: context)
+                } else {
+                    let newQuote = Quote(context: context)
+                    setAttributes(for: newQuote, in: context)
+                }
             }
+        } else {
+            // Show alert that quote textfield must not be empty
         }
     }
     

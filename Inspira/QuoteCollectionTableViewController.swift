@@ -9,18 +9,10 @@
 import UIKit
 import CoreData
 
-struct QuoteInfo {
-    var text: String?
-    var creator: String?
-    var descriptionOfHowFound: String?
-    var interpretation: String?
-    var imageData: Data?
-}
-
 class QuoteCollectionTableViewController: UITableViewController {
 
     var container: NSPersistentContainer? = (UIApplication.shared.delegate as? AppDelegate)?.persistentContainer
-    var quotes = [QuoteInfo]()
+    var quotes = [Quote]()
     
     private func loadQuotesFromDatabase(_ handler: @escaping ([Quote]) -> Void) {
         container?.performBackgroundTask { context in
@@ -37,14 +29,7 @@ class QuoteCollectionTableViewController: UITableViewController {
         super.viewDidAppear(animated)
         loadQuotesFromDatabase { loadedQuotes in
             DispatchQueue.main.async {
-                self.quotes = loadedQuotes.map {
-                    QuoteInfo(text: $0.text,
-                              creator: $0.creator,
-                              descriptionOfHowFound: $0.descriptionOfHowFound,
-                              interpretation: $0.interpretation,
-                              imageData: $0.imageData)
-                    
-                }
+                self.quotes = loadedQuotes
                 self.tableView.reloadData()
             }
         }
