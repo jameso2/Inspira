@@ -14,6 +14,7 @@
 		EB1B3EA9223C1D6700D6F433 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = EB1B3EA7223C1D6700D6F433 /* LaunchScreen.storyboard */; };
 		EB1B3EB1223C2A2800D6F433 /* QuoteCollectionTableViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB1B3EB0223C2A2800D6F433 /* QuoteCollectionTableViewController.swift */; };
 		EB1B3EB3223C2B2800D6F433 /* QuoteDetailViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB1B3EB2223C2B2800D6F433 /* QuoteDetailViewController.swift */; };
+		EB37DB3F224122B600456EA3 /* Quote.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB37DB3E224122B600456EA3 /* Quote.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -26,6 +27,7 @@
 		EB1B3EAA223C1D6700D6F433 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		EB1B3EB0223C2A2800D6F433 /* QuoteCollectionTableViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuoteCollectionTableViewController.swift; sourceTree = "<group>"; };
 		EB1B3EB2223C2B2800D6F433 /* QuoteDetailViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuoteDetailViewController.swift; sourceTree = "<group>"; };
+		EB37DB3E224122B600456EA3 /* Quote.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Quote.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -58,6 +60,7 @@
 		EB1B3E9A223C1D5C00D6F433 /* Inspira */ = {
 			isa = PBXGroup;
 			children = (
+				EB37DB3E224122B600456EA3 /* Quote.swift */,
 				EB1B3EB0223C2A2800D6F433 /* QuoteCollectionTableViewController.swift */,
 				EBE7C056223F9F7B000DA9A5 /* Supporting Files */,
 				EB1B3E9F223C1D5C00D6F433 /* Main.storyboard */,
@@ -152,6 +155,7 @@
 				EB1B3EB1223C2A2800D6F433 /* QuoteCollectionTableViewController.swift in Sources */,
 				EB1B3EA4223C1D5C00D6F433 /* Inspira.xcdatamodeld in Sources */,
 				EB1B3EB3223C2B2800D6F433 /* QuoteDetailViewController.swift in Sources */,
+				EB37DB3F224122B600456EA3 /* Quote.swift in Sources */,
 				EB1B3E9C223C1D5C00D6F433 /* AppDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
