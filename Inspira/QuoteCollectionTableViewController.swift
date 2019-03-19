@@ -9,28 +9,45 @@
 import UIKit
 import CoreData
 
+struct QuoteInfo {
+    var text: String?
+    var creator: String?
+    var descriptionOfHowFound: String?
+    var interpretation: String?
+    var imageData: Data?
+}
+
 class QuoteCollectionTableViewController: UITableViewController {
 
-    var container = (UIApplication.shared.delegate as? AppDelegate)?.persistentContainer
-    var quotes = [Quote]()
+    var container: NSPersistentContainer? = (UIApplication.shared.delegate as? AppDelegate)?.persistentContainer
+    var quotes = [QuoteInfo]()
     
-    private func loadQuotesFromDatabase() {
+    private func loadQuotesFromDatabase(_ handler: @escaping ([Quote]) -> Void) {
         container?.performBackgroundTask { context in
             do {
                 let quotes = try Quote.loadAllQuotes(from: context)
-                DispatchQueue.main.async {
-                    self.quotes = quotes
-                    self.tableView.reloadData()
-                }
+                handler(quotes)
             } catch {
                 print("Error: Could not load all quotes from database.")
             }
         }
     }
     
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        loadQuotesFromDatabase()
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        loadQuotesFromDatabase { loadedQuotes in
+            DispatchQueue.main.async {
+                self.quotes = loadedQuotes.map {
+                    QuoteInfo(text: $0.text,
+                              creator: $0.creator,
+                              descriptionOfHowFound: $0.descriptionOfHowFound,
+                              interpretation: $0.interpretation,
+                              imageData: $0.imageData)
+                    
+                }
+                self.tableView.reloadData()
+            }
+        }
     }
 
     // MARK: - Table view data source
@@ -43,15 +60,13 @@ class QuoteCollectionTableViewController: UITableViewController {
         return quotes.count
     }
 
-    /*
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
-
-        // Configure the cell...
-
+        let cell = tableView.dequeueReusableCell(withIdentifier: "QuoteCell", for: indexPath)
+        let quote = quotes[indexPath.row]
+        cell.textLabel?.text = quote.text
+        cell.detailTextLabel?.text = quote.creator
         return cell
     }
-    */
 
     /*
     // Override to support conditional editing of the table view.

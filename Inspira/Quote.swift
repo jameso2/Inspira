@@ -22,12 +22,11 @@ class Quote: NSManagedObject {
     
     class func addQuote(_ quoteInfo: QuoteInfo, to context: NSManagedObjectContext) {
         let quote = Quote(context: context)
-        quote.text =
-        quote.creator =
-        quote.descriptionOfHowFound =
-        quote.id =
-        quote.image =
-        quote.interpretation =
+        quote.text = quoteInfo.text
+        quote.creator = quoteInfo.creator
+        quote.descriptionOfHowFound = quoteInfo.descriptionOfHowFound
+        quote.imageData = quoteInfo.imageData
+        quote.interpretation = quoteInfo.interpretation
         try? context.save()
     }
 }
