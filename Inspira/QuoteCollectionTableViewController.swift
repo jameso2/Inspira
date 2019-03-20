@@ -9,31 +9,54 @@
 import UIKit
 import CoreData
 
-class QuoteCollectionTableViewController: UITableViewController {
+class QuoteCollectionTableViewController: UITableViewController, UISplitViewControllerDelegate {
 
     var container: NSPersistentContainer? = (UIApplication.shared.delegate as? AppDelegate)?.persistentContainer
     var quotes = [Quote]()
     
-    private func loadQuotesFromDatabase(_ handler: @escaping ([Quote]) -> Void) {
+    private func loadQuotesFromDatabase() {
         container?.performBackgroundTask { context in
             do {
                 let quotes = try Quote.loadAllQuotes(from: context)
-                handler(quotes)
+                DispatchQueue.main.async {
+                    self.quotes = quotes
+                    self.tableView.reloadData()
+                }
             } catch {
                 print("Error: Could not load all quotes from database.")
             }
         }
     }
     
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
-        loadQuotesFromDatabase { loadedQuotes in
-            DispatchQueue.main.async {
-                self.quotes = loadedQuotes
-                self.tableView.reloadData()
-            }
+    @IBAction func createNewQuote(_ sender: UIBarButtonItem) {
+        performSegue(withIdentifier: "ShowQuoteDetail", sender: nil)
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        loadQuotesFromDatabase()
+    }
+    
+    override func viewWillLayoutSubviews() {
+        super.viewWillLayoutSubviews()
+        if splitViewController?.preferredDisplayMode != .primaryOverlay {
+            splitViewController?.preferredDisplayMode = .primaryOverlay
         }
     }
+    
+    override func awakeFromNib() {
+        splitViewController?.delegate = self
+    }
+    
+    func splitViewController(_ splitViewController: UISplitViewController, collapseSecondary secondaryViewController: UIViewController, onto primaryViewController: UIViewController) -> Bool {
+        if let quoteDetailVC = secondaryViewController.contents as? QuoteDetailViewController {
+            if quoteDetailVC.quoteDeletionHandler == nil {
+                return true
+            }
+        }
+        return false
+    }
+    
 
     // MARK: - Table view data source
 
@@ -51,6 +74,10 @@ class QuoteCollectionTableViewController: UITableViewController {
         cell.textLabel?.text = quote.text
         cell.detailTextLabel?.text = quote.creator
         return cell
+    }
+    
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        performSegue(withIdentifier: "ShowQuoteDetail", sender: indexPath)
     }
 
     /*
@@ -73,14 +100,42 @@ class QuoteCollectionTableViewController: UITableViewController {
     }
     */
 
-    /*
     // MARK: - Navigation
 
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        // Get the new view controller using segue.destination.
-        // Pass the selected object to the new view controller.
+        if segue.identifier == "ShowQuoteDetail" {
+            if let quoteDetailVC = segue.destination.contents as? QuoteDetailViewController {
+                quoteDetailVC.container = container
+                quoteDetailVC.quoteDeletionHandler = { [weak self, unowned quoteDetailVC] in
+                    // Display the next quote (if any)
+                    if let quoteCount = self?.quotes.count {
+                        let indexOfNextQuote: IndexPath
+                        if let indexPath = sender as? IndexPath {
+                            indexOfNextQuote = IndexPath(row: indexPath.row + 1, section: 0)
+                        } else {
+                            indexOfNextQuote = IndexPath(row: 0, section: 0)
+                        }
+                        if indexOfNextQuote.row < quoteCount {
+                            quoteDetailVC.quote = self?.quotes[indexOfNextQuote.row]
+                        } else {
+                            quoteDetailVC.view.isHidden = true
+                        }
+                    }
+                }
+                if let indexPath = sender as? IndexPath {
+                    quoteDetailVC.quote = quotes[indexPath.row]
+                }
+            }
+        }
     }
-    */
+}
 
+extension UIViewController {
+    var contents: UIViewController {
+        if let navcon = self as? UINavigationController {
+            return navcon.visibleViewController ?? navcon
+        } else {
+            return self
+        }
+    }
 }

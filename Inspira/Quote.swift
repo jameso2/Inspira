@@ -19,14 +19,4 @@ class Quote: NSManagedObject {
             throw error
         }
     }
-    
-    class func addQuote(_ quoteInfo: QuoteInfo, to context: NSManagedObjectContext) {
-        let quote = Quote(context: context)
-        quote.text = quoteInfo.text
-        quote.creator = quoteInfo.creator
-        quote.descriptionOfHowFound = quoteInfo.descriptionOfHowFound
-        quote.imageData = quoteInfo.imageData
-        quote.interpretation = quoteInfo.interpretation
-        try? context.save()
-    }
 }

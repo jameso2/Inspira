@@ -65,8 +65,8 @@
 				EBE7C056223F9F7B000DA9A5 /* Supporting Files */,
 				EB1B3E9F223C1D5C00D6F433 /* Main.storyboard */,
 				EB1B3EB2223C2B2800D6F433 /* QuoteDetailViewController.swift */,
-				EB1B3EA5223C1D6600D6F433 /* Assets.xcassets */,
 				EB1B3EA2223C1D5C00D6F433 /* Inspira.xcdatamodeld */,
+				EB1B3EAA223C1D6700D6F433 /* Info.plist */,
 			);
 			path = Inspira;
 			sourceTree = "<group>";
@@ -76,7 +76,7 @@
 			children = (
 				EB1B3E9B223C1D5C00D6F433 /* AppDelegate.swift */,
 				EB1B3EA7223C1D6700D6F433 /* LaunchScreen.storyboard */,
-				EB1B3EAA223C1D6700D6F433 /* Info.plist */,
+				EB1B3EA5223C1D6600D6F433 /* Assets.xcassets */,
 			);
 			path = "Supporting Files";
 			sourceTree = "<group>";

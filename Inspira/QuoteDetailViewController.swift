@@ -25,18 +25,82 @@ class QuoteDetailViewController: UIViewController, UITextFieldDelegate {
     }
     
     var container: NSPersistentContainer? = (UIApplication.shared.delegate as? AppDelegate)?.persistentContainer
+    
+    var quoteDeletionHandler: (() -> Void)?
 
-    @IBOutlet private weak var quoteText: UITextField! { didSet { quoteText.delegate = self } }
+    @IBOutlet private weak var quoteText: UITextField! {
+        didSet {
+            quoteText.delegate = self
+            if let text = quoteText.text, text.isEmpty {
+                quoteText.becomeFirstResponder()
+            }
+        }
+    }
     @IBOutlet private weak var creator: UITextField! { didSet { creator.delegate = self } }
     @IBOutlet private weak var descriptionOfHowFound: UITextField! { didSet { descriptionOfHowFound.delegate = self } }
     @IBOutlet private weak var interpretation: UITextField! { didSet { interpretation.delegate = self } }
     @IBOutlet private weak var imageView: UIImageView!
+    @IBOutlet weak var quoteRequirementMessage: UILabel! {
+        didSet {
+            quoteRequirementMessage.isHidden = true
+        }
+    }
+    @IBOutlet weak var deleteButton: UIBarButtonItem!
     
+    @IBAction func presentDeleteAlert(_ sender: UIBarButtonItem) {
+        let alert = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
+        alert.addAction(UIAlertAction(title: "Delete Quote",
+                                      style: .destructive,
+                                      handler: { action in
+                                        self.presentingViewController?.dismiss(animated: true, completion: {
+                                            self.deleteQuote()
+                                            self.quoteDeletionHandler?()
+                                        })
+                                      }
+        ))
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+        alert.modalPresentationStyle = .popover
+        let ppc = alert.popoverPresentationController
+        ppc?.barButtonItem = deleteButton
+        present(alert, animated: true, completion: nil)
+    }
+    
+    
+    
+    private func displayQuoteRequirementMessage() {
+        quoteText.layer.borderWidth = 5.0
+        quoteText.layer.borderColor = #colorLiteral(red: 1, green: 0.1491314173, blue: 0, alpha: 1).cgColor
+        quoteRequirementMessage.isHidden = false
+    }
+    
+    private func removeQuoteRequirementMessage() {
+        quoteText.layer.borderWidth = 0
+        quoteText.layer.borderColor = #colorLiteral(red: 0, green: 0, blue: 0, alpha: 0).cgColor
+        quoteRequirementMessage.isHidden = true
+    }
+    
+    func textFieldShouldEndEditing(_ textField: UITextField) -> Bool {
+        if textField == quoteText {
+            if let text = quoteText.text, text.isEmpty {
+                displayQuoteRequirementMessage()
+                return false
+            } else {
+                removeQuoteRequirementMessage()
+                saveQuote()
+            }
+        } else if textField == creator {
+            if let creator = creator.text, !creator.isEmpty {
+                saveQuote()
+            }
+        }
+        return true
+    }
     
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         textField.resignFirstResponder()
         return true
     }
+    
     
     private func setAttributes(for quote: Quote, in context: NSManagedObjectContext) {
         quote.text = quoteText.text
@@ -47,33 +111,31 @@ class QuoteDetailViewController: UIViewController, UITextFieldDelegate {
         try? context.save()
     }
     
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        // TODO: Instead of happening when view will disappear, the code
-        // below should execute when the edit mode is toggled off
-        if let quoteToSave = quoteText.text, !quoteToSave.isEmpty {
-            if let context = container?.viewContext {
-                if let quoteToUpdate = quote {
-                    setAttributes(for: quoteToUpdate, in: context)
-                } else {
-                    let newQuote = Quote(context: context)
-                    setAttributes(for: newQuote, in: context)
-                }
+    private func saveQuote() {
+        if let context = container?.viewContext {
+            if let quoteToUpdate = quote {
+                setAttributes(for: quoteToUpdate, in: context)
+            } else {
+                let newQuote = Quote(context: context)
+                setAttributes(for: newQuote, in: context)
             }
-        } else {
-            // Show alert that quote textfield must not be empty
         }
     }
     
-
-    /*
-    // MARK: - Navigation
-
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        // Get the new view controller using segue.destination.
-        // Pass the selected object to the new view controller.
+    private func deleteQuote() {
+        if let context = container?.viewContext, let quoteToDelete = quote {
+            context.delete(quoteToDelete)
+            quote = nil
+            try? context.save()
+        }
     }
-    */
-
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        if let quoteToSave = quoteText?.text, !quoteToSave.isEmpty {
+            saveQuote()
+        } else {
+            deleteQuote()
+        }
+    }
 }
