@@ -11,13 +11,15 @@ import CoreData
 
 class QuoteDetailViewController: UIViewController, UITextFieldDelegate {
     
-    var quote: Quote? {
-        didSet {
-            quoteText.text = quote?.text
-            creator.text = quote?.creator
-            descriptionOfHowFound.text = quote?.descriptionOfHowFound
-            interpretation.text = quote?.interpretation
-            if let imageData = quote?.imageData {
+    var quoteToDisplay: Quote?
+    
+    override func viewDidLoad() {
+        if quoteToDisplay != nil {
+            quoteText.text = quoteToDisplay!.text
+            creator.text = quoteToDisplay!.creator
+            descriptionOfHowFound.text = quoteToDisplay!.descriptionOfHowFound
+            interpretation.text = quoteToDisplay!.interpretation
+            if let imageData = quoteToDisplay!.imageData {
                 imageView.image = UIImage(data: imageData)
                 imageView.sizeToFit()
             }
@@ -52,10 +54,12 @@ class QuoteDetailViewController: UIViewController, UITextFieldDelegate {
         alert.addAction(UIAlertAction(title: "Delete Quote",
                                       style: .destructive,
                                       handler: { action in
-                                        self.presentingViewController?.dismiss(animated: true, completion: {
-                                            self.deleteQuote()
-                                            self.quoteDeletionHandler?()
-                                        })
+                                        if let vc = self.presentingViewController as? QuoteDetailViewController {
+                                            vc.dismiss(animated: true, completion: {
+                                                vc.deleteQuote()
+                                                vc.quoteDeletionHandler?()
+                                            })
+                                        }
                                       }
         ))
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
@@ -74,17 +78,22 @@ class QuoteDetailViewController: UIViewController, UITextFieldDelegate {
     }
     
     private func removeQuoteRequirementMessage() {
-        quoteText.layer.borderWidth = 0
-        quoteText.layer.borderColor = #colorLiteral(red: 0, green: 0, blue: 0, alpha: 0).cgColor
-        quoteRequirementMessage.isHidden = true
+        quoteText?.layer.borderWidth = 0
+        quoteText?.layer.borderColor = #colorLiteral(red: 0, green: 0, blue: 0, alpha: 0).cgColor
+        quoteRequirementMessage?.isHidden = true
     }
     
-    func textFieldShouldEndEditing(_ textField: UITextField) -> Bool {
+    func textFieldShouldBeginEditing(_ textField: UITextField) -> Bool {
+        if textField != quoteText, let text = quoteText.text, text.isEmpty {
+            displayQuoteRequirementMessage()
+            return false
+        }
+        return true
+    }
+    
+    func textFieldDidEndEditing(_ textField: UITextField) {
         if textField == quoteText {
-            if let text = quoteText.text, text.isEmpty {
-                displayQuoteRequirementMessage()
-                return false
-            } else {
+            if let text = quoteText.text, !text.isEmpty {
                 removeQuoteRequirementMessage()
                 saveQuote()
             }
@@ -93,7 +102,6 @@ class QuoteDetailViewController: UIViewController, UITextFieldDelegate {
                 saveQuote()
             }
         }
-        return true
     }
     
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
@@ -113,28 +121,31 @@ class QuoteDetailViewController: UIViewController, UITextFieldDelegate {
     
     private func saveQuote() {
         if let context = container?.viewContext {
-            if let quoteToUpdate = quote {
+            if let quoteToUpdate = quoteToDisplay {
                 setAttributes(for: quoteToUpdate, in: context)
             } else {
                 let newQuote = Quote(context: context)
                 setAttributes(for: newQuote, in: context)
             }
+            do {
+                print(try Quote.loadAllQuotes(from: context))
+            } catch {
+                print("")
+            }
         }
     }
     
     private func deleteQuote() {
-        if let context = container?.viewContext, let quoteToDelete = quote {
+        if let context = container?.viewContext, let quoteToDelete = quoteToDisplay {
             context.delete(quoteToDelete)
-            quote = nil
+            quoteToDisplay = nil
             try? context.save()
         }
     }
     
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        if let quoteToSave = quoteText?.text, !quoteToSave.isEmpty {
-            saveQuote()
-        } else {
+        if let text = quoteText?.text, text.isEmpty {
             deleteQuote()
         }
     }

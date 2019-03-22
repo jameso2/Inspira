@@ -15,15 +15,15 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
     var quotes = [Quote]()
     
     private func loadQuotesFromDatabase() {
-        container?.performBackgroundTask { context in
+        // Note: This operation cannot be done on the background queue because managed objects
+        // cannot be passed between threads. If we really wanted to do this operation on the background
+        // we would have to pass the object IDs between threads
+        if let context = container?.viewContext {
             do {
-                let quotes = try Quote.loadAllQuotes(from: context)
-                DispatchQueue.main.async {
-                    self.quotes = quotes
-                    self.tableView.reloadData()
-                }
-            } catch {
-                print("Error: Could not load all quotes from database.")
+                quotes = try Quote.loadAllQuotes(from: context)
+                self.tableView.reloadData()
+            } catch let error {
+                print("ERROR: \(error.localizedDescription).")
             }
         }
     }
@@ -32,8 +32,8 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
         performSegue(withIdentifier: "ShowQuoteDetail", sender: nil)
     }
     
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
+    override func viewDidAppear(_ animated: Bool) { // What's even better is using a fetched results controller
+        super.viewDidAppear(animated)
         loadQuotesFromDatabase()
     }
     
@@ -46,6 +46,7 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
     
     override func awakeFromNib() {
         splitViewController?.delegate = self
+        navigationItem.title = "Quotes"
     }
     
     func splitViewController(_ splitViewController: UISplitViewController, collapseSecondary secondaryViewController: UIViewController, onto primaryViewController: UIViewController) -> Bool {
@@ -116,14 +117,14 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
                             indexOfNextQuote = IndexPath(row: 0, section: 0)
                         }
                         if indexOfNextQuote.row < quoteCount {
-                            quoteDetailVC.quote = self?.quotes[indexOfNextQuote.row]
+                            quoteDetailVC.quoteToDisplay = self?.quotes[indexOfNextQuote.row]
                         } else {
                             quoteDetailVC.view.isHidden = true
                         }
                     }
                 }
                 if let indexPath = sender as? IndexPath {
-                    quoteDetailVC.quote = quotes[indexPath.row]
+                    quoteDetailVC.quoteToDisplay = quotes[indexPath.row]
                 }
             }
         }
