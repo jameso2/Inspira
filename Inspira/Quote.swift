@@ -13,7 +13,7 @@ class Quote: NSManagedObject {
     class func loadAllQuotes(from context: NSManagedObjectContext) throws -> [Quote] {
         let request: NSFetchRequest<Quote> = Quote.fetchRequest()
         do {
-            return try context.fetch(request)
+            return try context.fetch(request).reversed()
         } catch {
             throw error
         }

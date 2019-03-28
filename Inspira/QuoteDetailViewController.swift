@@ -11,19 +11,25 @@ import CoreData
 
 class QuoteDetailViewController: UIViewController, UITextFieldDelegate {
     
-    var quoteToDisplay: Quote?
+    var quoteToDisplay: Quote? {
+        didSet {
+            updateViewFromModel()
+        }
+    }
+    
+    private func updateViewFromModel() {
+        quoteText?.text = quoteToDisplay?.text
+        creator?.text = quoteToDisplay?.creator
+        descriptionOfHowFound?.text = quoteToDisplay?.descriptionOfHowFound
+        interpretation?.text = quoteToDisplay?.interpretation
+        if let imageData = quoteToDisplay?.imageData {
+            imageView?.image = UIImage(data: imageData)
+            imageView?.sizeToFit()
+        }
+    }
     
     override func viewDidLoad() {
-        if quoteToDisplay != nil {
-            quoteText.text = quoteToDisplay!.text
-            creator.text = quoteToDisplay!.creator
-            descriptionOfHowFound.text = quoteToDisplay!.descriptionOfHowFound
-            interpretation.text = quoteToDisplay!.interpretation
-            if let imageData = quoteToDisplay!.imageData {
-                imageView.image = UIImage(data: imageData)
-                imageView.sizeToFit()
-            }
-        }
+        updateViewFromModel()
     }
     
     var container: NSPersistentContainer? = (UIApplication.shared.delegate as? AppDelegate)?.persistentContainer
@@ -53,13 +59,9 @@ class QuoteDetailViewController: UIViewController, UITextFieldDelegate {
         let alert = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
         alert.addAction(UIAlertAction(title: "Delete Quote",
                                       style: .destructive,
-                                      handler: { action in
-                                        if let vc = self.presentingViewController as? QuoteDetailViewController {
-                                            vc.dismiss(animated: true, completion: {
-                                                vc.deleteQuote()
-                                                vc.quoteDeletionHandler?()
-                                            })
-                                        }
+                                      handler: { [weak self] action in
+                                            self?.deleteQuote()
+                                            self?.quoteDeletionHandler?()
                                       }
         ))
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
@@ -119,18 +121,21 @@ class QuoteDetailViewController: UIViewController, UITextFieldDelegate {
         try? context.save()
     }
     
+    private var allOutletsSet: Bool {
+        if quoteText != nil, creator != nil, descriptionOfHowFound != nil, interpretation != nil, imageView != nil {
+            return true
+        }
+        return false
+    }
+    
     private func saveQuote() {
         if let context = container?.viewContext {
             if let quoteToUpdate = quoteToDisplay {
                 setAttributes(for: quoteToUpdate, in: context)
-            } else {
+            } else if allOutletsSet {
                 let newQuote = Quote(context: context)
                 setAttributes(for: newQuote, in: context)
-            }
-            do {
-                print(try Quote.loadAllQuotes(from: context))
-            } catch {
-                print("")
+                quoteToDisplay = newQuote
             }
         }
     }
@@ -145,8 +150,12 @@ class QuoteDetailViewController: UIViewController, UITextFieldDelegate {
     
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        if let text = quoteText?.text, text.isEmpty {
-            deleteQuote()
+        if quoteToDisplay != nil, let text = quoteText?.text {
+            if text.isEmpty {
+                deleteQuote()
+            } else {
+                saveQuote()
+            }
         }
     }
 }

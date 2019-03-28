@@ -21,6 +21,7 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
         if let context = container?.viewContext {
             do {
                 quotes = try Quote.loadAllQuotes(from: context)
+                print("Number of quotes is \(quotes.count)")
                 self.tableView.reloadData()
             } catch let error {
                 print("ERROR: \(error.localizedDescription).")
@@ -33,6 +34,7 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
     }
     
     override func viewDidAppear(_ animated: Bool) { // What's even better is using a fetched results controller
+        print("I just appeared!")
         super.viewDidAppear(animated)
         loadQuotesFromDatabase()
     }
@@ -107,20 +109,23 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
         if segue.identifier == "ShowQuoteDetail" {
             if let quoteDetailVC = segue.destination.contents as? QuoteDetailViewController {
                 quoteDetailVC.container = container
-                quoteDetailVC.quoteDeletionHandler = { [weak self, unowned quoteDetailVC] in
+                quoteDetailVC.quoteDeletionHandler = { [unowned self, unowned quoteDetailVC] in
                     // Display the next quote (if any)
-                    if let quoteCount = self?.quotes.count {
-                        let indexOfNextQuote: IndexPath
-                        if let indexPath = sender as? IndexPath {
-                            indexOfNextQuote = IndexPath(row: indexPath.row + 1, section: 0)
-                        } else {
-                            indexOfNextQuote = IndexPath(row: 0, section: 0)
+                    let indexOfNextQuote: IndexPath
+                    if let indexPath = sender as? IndexPath {
+                        indexOfNextQuote = IndexPath(row: indexPath.row + 1, section: 0)
+                    } else {
+                        indexOfNextQuote = IndexPath(row: 0, section: 0)
+                    }
+                    if indexOfNextQuote.row < self.quotes.count {
+                        quoteDetailVC.quoteToDisplay = self.quotes[indexOfNextQuote.row]
+                    } else {
+                        if let splitViewVCs = quoteDetailVC.splitViewController?.viewControllers, splitViewVCs.count > 1 {
+                            splitViewVCs[1].view.isHidden = true
+                        } else if let navcon = quoteDetailVC.navigationController?.navigationController {
+                            navcon.popViewController(animated: true)
                         }
-                        if indexOfNextQuote.row < quoteCount {
-                            quoteDetailVC.quoteToDisplay = self?.quotes[indexOfNextQuote.row]
-                        } else {
-                            quoteDetailVC.view.isHidden = true
-                        }
+//                            quoteDetailVC.view.isHidden = true
                     }
                 }
                 if let indexPath = sender as? IndexPath {
