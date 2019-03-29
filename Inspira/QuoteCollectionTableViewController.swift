@@ -21,7 +21,6 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
         if let context = container?.viewContext {
             do {
                 quotes = try Quote.loadAllQuotes(from: context)
-                print("Number of quotes is \(quotes.count)")
                 self.tableView.reloadData()
             } catch let error {
                 print("ERROR: \(error.localizedDescription).")
@@ -34,7 +33,6 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
     }
     
     override func viewDidAppear(_ animated: Bool) { // What's even better is using a fetched results controller
-        print("I just appeared!")
         super.viewDidAppear(animated)
         loadQuotesFromDatabase()
     }
