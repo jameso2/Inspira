@@ -9,12 +9,116 @@
 import UIKit
 import CoreData
 
-class QuoteDetailViewController: UIViewController, UITextFieldDelegate {
+class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFieldDelegate {
+    
+    // MARK: Model
     
     var quoteToDisplay: Quote? {
         didSet {
             updateViewFromModel()
         }
+    }
+    
+    var container: NSPersistentContainer? = (UIApplication.shared.delegate as? AppDelegate)?.persistentContainer
+    
+    var quoteDeletionHandler: (() -> Void)?
+    
+    // MARK: Outlets
+    
+    @IBOutlet private weak var quoteText: UITextView! {
+        didSet {
+            configureTextView(quoteText)
+            if let text = quoteText.text, text.isEmpty {
+                quoteText.becomeFirstResponder()
+            }
+        }
+    }
+    
+    @IBOutlet weak var quoteTextHeight: NSLayoutConstraint!
+    
+    @IBOutlet private weak var creator: UITextView! { didSet { configureTextView(creator) } }
+    
+    @IBOutlet private weak var descriptionOfHowFound: UITextView! { didSet { configureTextView(descriptionOfHowFound) } }
+    
+    @IBOutlet private weak var interpretation: UITextView! { didSet { configureTextView(interpretation) } }
+    
+    @IBOutlet private weak var imageView: UIImageView!
+    @IBOutlet weak var quoteRequirementMessage: UILabel! { didSet { quoteRequirementMessage.isHidden = true } }
+    @IBOutlet weak var deleteButton: UIBarButtonItem!
+    
+    // MARK: TextView functionality
+    
+    private func configureTextView(_ textview: UITextView) {
+        textview.delegate = self
+        textview.layer.borderColor = UIColor.lightGray.cgColor
+        textview.layer.borderWidth = 0.35
+        textview.layer.cornerRadius = 6.0
+    }
+    
+    // Note: Like textFieldShouldEndEditing, the delegate method below allows us
+    // to display the quote requirement message whenever the user tries to begin
+    // editing another textfield and has not yet entered a quote; however, unlike
+    // textFieldShouldEndEditing, this method is not called (and the quote
+    // requirement message is not displayed) when the view is about
+    // to disappear (e.g. when we click to go back to our collection of quotes)
+    
+    func textViewShouldBeginEditing(_ textView: UITextView) -> Bool {
+        if textView != quoteText, let text = quoteText.text, text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            displayQuoteRequirementMessage()
+            return false
+        }
+        return true
+    }
+    
+    private func displayQuoteRequirementMessage() {
+        quoteText.layer.borderWidth = 5.0
+        quoteText.layer.borderColor = #colorLiteral(red: 1, green: 0.1491314173, blue: 0, alpha: 1).cgColor
+        quoteRequirementMessage.isHidden = false
+    }
+    
+    private func removeQuoteRequirementMessage() {
+        configureTextView(quoteText)
+        quoteRequirementMessage?.isHidden = true
+    }
+    
+    // The delegate method below allows us to prevent the user from entering leading white spaces or newlines
+    // into the textView; however, it should allow us to delete characters
+    
+    func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
+        print("range is: \(range), replacement text is: \(text)")
+        if range.contains(0), !text.isEmpty, text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return false
+        }
+        textView.sizeThatFits(<#T##size: CGSize##CGSize#>)
+        textView.sizeToFit()
+        return true
+    }
+    
+    // The delegate method below allows us to remove the quote requirement message as soon as
+    // the user types a character into the quote textfield. This method is called even when a
+    // user deletes characters.
+    
+    func textViewDidChange(_ textView: UITextView) {
+        if textView == quoteText {
+            let text = quoteText.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !text.isEmpty {
+                removeQuoteRequirementMessage()
+            }
+        }
+    }
+    
+    func textViewDidEndEditing(_ textView: UITextView) {
+        trimText(in: textView)
+        if textView == quoteText, !quoteText.text.isEmpty {
+            saveQuote()
+        } else if textView == creator, !creator.text.isEmpty {
+            saveQuote()
+        }
+    }
+    
+    private func trimText(in textView: UITextView) {
+        let trimmedText = textView.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        textView.text = trimmedText
     }
     
     private func updateViewFromModel() {
@@ -32,29 +136,6 @@ class QuoteDetailViewController: UIViewController, UITextFieldDelegate {
         updateViewFromModel()
     }
     
-    var container: NSPersistentContainer? = (UIApplication.shared.delegate as? AppDelegate)?.persistentContainer
-    
-    var quoteDeletionHandler: (() -> Void)?
-
-    @IBOutlet private weak var quoteText: UITextField! {
-        didSet {
-            quoteText.delegate = self
-            if let text = quoteText.text, text.isEmpty {
-                quoteText.becomeFirstResponder()
-            }
-        }
-    }
-    @IBOutlet private weak var creator: UITextField! { didSet { creator.delegate = self } }
-    @IBOutlet private weak var descriptionOfHowFound: UITextField! { didSet { descriptionOfHowFound.delegate = self } }
-    @IBOutlet private weak var interpretation: UITextField! { didSet { interpretation.delegate = self } }
-    @IBOutlet private weak var imageView: UIImageView!
-    @IBOutlet weak var quoteRequirementMessage: UILabel! {
-        didSet {
-            quoteRequirementMessage.isHidden = true
-        }
-    }
-    @IBOutlet weak var deleteButton: UIBarButtonItem!
-    
     @IBAction func presentDeleteAlert(_ sender: UIBarButtonItem) {
         let alert = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
         alert.addAction(UIAlertAction(title: "Delete Quote",
@@ -69,57 +150,6 @@ class QuoteDetailViewController: UIViewController, UITextFieldDelegate {
         let ppc = alert.popoverPresentationController
         ppc?.barButtonItem = deleteButton
         present(alert, animated: true, completion: nil)
-    }
-    
-    private func displayQuoteRequirementMessage() {
-        quoteText.layer.borderWidth = 5.0
-        quoteText.layer.borderColor = #colorLiteral(red: 1, green: 0.1491314173, blue: 0, alpha: 1).cgColor
-        quoteRequirementMessage.isHidden = false
-    }
-    
-    private func removeQuoteRequirementMessage() {
-        quoteText?.layer.borderWidth = 0
-        quoteText?.layer.borderColor = #colorLiteral(red: 0, green: 0, blue: 0, alpha: 0).cgColor
-        quoteRequirementMessage?.isHidden = true
-    }
-    
-    // Note: Like textFieldShouldEndEditing, the delegate method below allows us
-    // to display the quote requirement message whenever the user tries to begin
-    // editing another textfield and has not yet entered a quote; however, unlike
-    // textFieldShouldEndEditing, this method is not called (and the quote
-    // requirement message is not displayed) when the view is about
-    // to disappear (e.g. when we click to go back to our collection of quotes)
-    
-    func textFieldShouldBeginEditing(_ textField: UITextField) -> Bool {
-        if textField != quoteText, let text = quoteText.text, text.isEmpty {
-            displayQuoteRequirementMessage()
-            return false
-        }
-        return true
-    }
-    
-    func textFieldDidEndEditing(_ textField: UITextField) {
-        if textField == quoteText, let text = quoteText.text, !text.isEmpty {
-            saveQuote()
-        } else if textField == creator, let creator = creator.text, !creator.isEmpty {
-            saveQuote()
-        }
-    }
-    
-    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-        textField.resignFirstResponder()
-        return true
-    }
-    
-    // The delegate method below allows us to remove the quote requirement message as soon as
-    // the user types a character into the quote textfield. This method is called even when a
-    // user deletes characters.
-    
-    func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
-        if textField == quoteText {
-            removeQuoteRequirementMessage()
-        }
-        return true
     }
     
     private func setAttributes(for quote: Quote, in context: NSManagedObjectContext) {
