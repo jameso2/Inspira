@@ -33,14 +33,16 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
             }
         }
     }
-    
-    @IBOutlet weak var quoteTextHeight: NSLayoutConstraint!
+    @IBOutlet private weak var quoteTextHeight: NSLayoutConstraint!
     
     @IBOutlet private weak var creator: UITextView! { didSet { configureTextView(creator) } }
+    @IBOutlet private weak var creatorHeight: NSLayoutConstraint!
     
     @IBOutlet private weak var descriptionOfHowFound: UITextView! { didSet { configureTextView(descriptionOfHowFound) } }
+    @IBOutlet private weak var descriptionOfHowFoundHeight: NSLayoutConstraint!
     
     @IBOutlet private weak var interpretation: UITextView! { didSet { configureTextView(interpretation) } }
+    @IBOutlet private weak var interpretationHeight: NSLayoutConstraint!
     
     @IBOutlet private weak var imageView: UIImageView!
     @IBOutlet weak var quoteRequirementMessage: UILabel! { didSet { quoteRequirementMessage.isHidden = true } }
@@ -48,11 +50,11 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
     
     // MARK: TextView functionality
     
-    private func configureTextView(_ textview: UITextView) {
-        textview.delegate = self
-        textview.layer.borderColor = UIColor.lightGray.cgColor
-        textview.layer.borderWidth = 0.35
-        textview.layer.cornerRadius = 6.0
+    private func configureTextView(_ textView: UITextView) {
+        textView.delegate = self
+        textView.layer.borderColor = UIColor.lightGray.cgColor
+        textView.layer.borderWidth = 0.35
+        textView.layer.cornerRadius = 6.0
     }
     
     // Note: Like textFieldShouldEndEditing, the delegate method below allows us
@@ -82,16 +84,25 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
     }
     
     // The delegate method below allows us to prevent the user from entering leading white spaces or newlines
-    // into the textView; however, it should allow us to delete characters
+    // while still allowing the user to delete the first character.
     
     func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
-        print("range is: \(range), replacement text is: \(text)")
-        if range.contains(0), !text.isEmpty, text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        if range.location == 0, !text.isEmpty, text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return false
         }
-        textView.sizeThatFits(<#T##size: CGSize##CGSize#>)
-        textView.sizeToFit()
         return true
+    }
+    
+    private func resize(_ textView: UITextView) {
+        let sizeThatFits = textView.sizeThatFits(CGSize(width: textView.frame.width, height: Constants.maxTextViewHeight))
+        let newHeight = min(sizeThatFits.height, Constants.maxTextViewHeight)
+        switch textView {
+        case quoteText: quoteTextHeight.constant = newHeight
+        case creator: creatorHeight.constant = newHeight
+        case descriptionOfHowFound: descriptionOfHowFoundHeight.constant = newHeight
+        case interpretation: interpretationHeight.constant = newHeight
+        default: break
+        }
     }
     
     // The delegate method below allows us to remove the quote requirement message as soon as
@@ -99,6 +110,7 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
     // user deletes characters.
     
     func textViewDidChange(_ textView: UITextView) {
+        resize(textView)
         if textView == quoteText {
             let text = quoteText.text.trimmingCharacters(in: .whitespacesAndNewlines)
             if !text.isEmpty {
@@ -110,6 +122,7 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
     func textViewDidEndEditing(_ textView: UITextView) {
         trimText(in: textView)
         if textView == quoteText, !quoteText.text.isEmpty {
+            print("Quote is going to be saved")
             saveQuote()
         } else if textView == creator, !creator.text.isEmpty {
             saveQuote()
@@ -133,7 +146,12 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
     }
     
     override func viewDidLoad() {
+        super.viewDidLoad()
         updateViewFromModel()
+        resize(quoteText)
+        resize(creator)
+        resize(descriptionOfHowFound)
+        resize(interpretation)
     }
     
     @IBAction func presentDeleteAlert(_ sender: UIBarButtonItem) {
@@ -197,5 +215,9 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
                 saveQuote()
             }
         }
+    }
+    
+    private struct Constants {
+        static let maxTextViewHeight: CGFloat = 125
     }
 }
