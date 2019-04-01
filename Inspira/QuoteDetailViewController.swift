@@ -119,12 +119,13 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
         }
     }
     
+    private var quoteIsMarkedForDeletion = false
+    
     func textViewDidEndEditing(_ textView: UITextView) {
         trimText(in: textView)
-        if textView == quoteText, !quoteText.text.isEmpty {
-            print("Quote is going to be saved")
+        if textView == quoteText, !quoteText.text.isEmpty, !quoteIsMarkedForDeletion {
             saveQuote()
-        } else if textView == creator, !creator.text.isEmpty {
+        } else if textView == creator, !creator.text.isEmpty, !quoteIsMarkedForDeletion {
             saveQuote()
         }
     }
@@ -199,6 +200,11 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
     }
     
     private func deleteQuote() {
+        // NOTE: The boolean below is necessary in the case that the user clicks on
+        // "Delete" before the quote has even been saved. In that case, quoteToDisplay
+        // would be nil, textViewDidEndEditing would be called, and the quote would be
+        // saved anyway even though it had been deleted
+        quoteIsMarkedForDeletion = true
         if let context = container?.viewContext, let quoteToDelete = quoteToDisplay {
             context.delete(quoteToDelete)
             quoteToDisplay = nil
