@@ -28,8 +28,50 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
         }
     }
     
+    private func deleteEmptyQuotes(from context: NSManagedObjectContext) -> Int {
+        var emptyQuotesCounter = 0
+        for quote in quotes {
+            if quote.isEmpty {
+                UIView.animate(withDuration: 0.2,
+                               delay: 0.2 * Double(emptyQuotesCounter),
+                               options: [],
+                               animations: { [weak self] in
+                                   context.delete(quote)
+                                   if let quoteIndex = self?.quotes.firstIndex(of: quote) {
+                                       self?.quotes.remove(at: quoteIndex)
+                                       self?.tableView.deleteRows(at: [IndexPath(row: quoteIndex, section: 0)], with: .fade)
+                                       try? context.save()
+                                   }
+                               }
+                              )
+                emptyQuotesCounter += 1
+            }
+        }
+        return emptyQuotesCounter
+    }
+    
     @IBAction func createNewQuote(_ sender: UIBarButtonItem) {
-        performSegue(withIdentifier: "ShowQuoteDetail", sender: nil)
+        if let context = container?.viewContext {
+            let numQuotesDeleted = deleteEmptyQuotes(from: context)
+            UIView.animate(withDuration: 0.4,
+                           delay: 0.2 * Double(numQuotesDeleted),
+                           options: [],
+                           animations: { [weak self] in
+                               let newQuote = Quote(context: context)
+                               try? context.save()
+                               self?.quotes.append(newQuote)
+                               self?.tableView.insertRows(at: [IndexPath(row: 0, section: 0)], with: .fade)
+                               self?.performSegue(withIdentifier: "ShowQuoteDetail", sender: IndexPath(row: 0, section: 0))
+                           }
+            )
+            UIView.animate(withDuration: 0.5,
+                           delay: 0.2 * Double(numQuotesDeleted) + 0.4,
+                           options: [],
+                           animations: { [weak self] in
+                               self?.splitViewController?.preferredDisplayMode = .primaryHidden
+                           }
+            )
+        }
     }
     
     override func viewDidAppear(_ animated: Bool) { // What's even better is using a fetched results controller
@@ -79,6 +121,9 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         performSegue(withIdentifier: "ShowQuoteDetail", sender: indexPath)
+        UIView.animate(withDuration: 0.5, animations: {
+            self.splitViewController?.preferredDisplayMode = .primaryHidden
+        })
     }
 
     /*
@@ -128,6 +173,8 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
                 }
                 if let indexPath = sender as? IndexPath {
                     quoteDetailVC.quoteToDisplay = quotes[indexPath.row]
+                } else {
+                    quoteDetailVC.quoteToDisplay = quotes[0]
                 }
             }
         }

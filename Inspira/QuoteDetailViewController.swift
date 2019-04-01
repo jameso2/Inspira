@@ -216,16 +216,16 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
         }
     }
     
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        if allOutletsSet, !quoteIsMarkedForDeletion {
-            if quoteText.isEmpty, creator.isEmpty, descriptionOfHowFound.isEmpty, interpretation.isEmpty {
-                deleteQuote()
-            } else {
-                saveQuote()
-            }
-        }
-    }
+//    override func viewWillDisappear(_ animated: Bool) {
+//        super.viewWillDisappear(animated)
+//        if allOutletsSet, !quoteIsMarkedForDeletion {
+//            if quoteText.isEmpty, creator.isEmpty, descriptionOfHowFound.isEmpty, interpretation.isEmpty {
+//                deleteQuote()
+//            } else {
+//                saveQuote()
+//            }
+//        }
+//    }
     
     private struct Constants {
         static let maxTextViewHeight: CGFloat = 125

@@ -18,4 +18,17 @@ class Quote: NSManagedObject {
             throw error
         }
     }
+    
+    var isEmpty: Bool {
+        if self.text.isEmpty, self.creator.isEmpty, self.descriptionOfHowFound.isEmpty, self.interpretation.isEmpty {
+            return true
+        }
+        return false
+    }
+}
+
+extension Optional where Wrapped == String {
+    var isEmpty: Bool {
+        return self?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true
+    }
 }
