@@ -28,7 +28,7 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
     @IBOutlet private weak var quoteText: UITextView! {
         didSet {
             configureTextView(quoteText)
-            if let text = quoteText.text, text.isEmpty {
+            if quoteText.isEmpty {
                 quoteText.becomeFirstResponder()
             }
         }
@@ -65,7 +65,7 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
     // to disappear (e.g. when we click to go back to our collection of quotes)
     
     func textViewShouldBeginEditing(_ textView: UITextView) -> Bool {
-        if textView != quoteText, let text = quoteText.text, text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        if textView != quoteText, quoteText.isEmpty {
             displayQuoteRequirementMessage()
             return false
         }
@@ -111,9 +111,9 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
     
     func textViewDidChange(_ textView: UITextView) {
         resize(textView)
-        if textView == quoteText {
-            let text = quoteText.text.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !text.isEmpty {
+        if textView == quoteText || textView == creator {
+            saveQuote()
+            if !quoteText.isEmpty {
                 removeQuoteRequirementMessage()
             }
         }
@@ -121,18 +121,22 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
     
     private var quoteIsMarkedForDeletion = false
     
+    // NOTE: The delegate method below is helpful primarily because it allows us to trim the text of trailing white
+    // spaces and newlines and save the quotes after the quoteText or creator text views are done being edited
+    
     func textViewDidEndEditing(_ textView: UITextView) {
         trimText(in: textView)
-        if textView == quoteText, !quoteText.text.isEmpty, !quoteIsMarkedForDeletion {
-            saveQuote()
-        } else if textView == creator, !creator.text.isEmpty, !quoteIsMarkedForDeletion {
-            saveQuote()
+        if textView == quoteText || textView == creator {
+            if !textView.isEmpty, !quoteIsMarkedForDeletion {
+                saveQuote()
+            }
         }
     }
     
     private func trimText(in textView: UITextView) {
         let trimmedText = textView.text.trimmingCharacters(in: .whitespacesAndNewlines)
         textView.text = trimmedText
+        resize(textView)
     }
     
     private func updateViewFromModel() {
@@ -172,8 +176,8 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
     }
     
     private func setAttributes(for quote: Quote, in context: NSManagedObjectContext) {
-        quote.text = quoteText.text
-        quote.creator = creator.text
+        quote.text = quoteText.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        quote.creator = creator.text.trimmingCharacters(in: .whitespacesAndNewlines)
         quote.descriptionOfHowFound = descriptionOfHowFound.text
         quote.interpretation = interpretation.text
         quote.imageData = imageView.image?.jpegData(compressionQuality: 1.0)
@@ -203,7 +207,7 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
         // NOTE: The boolean below is necessary in the case that the user clicks on
         // "Delete" before the quote has even been saved. In that case, quoteToDisplay
         // would be nil, textViewDidEndEditing would be called, and the quote would be
-        // saved anyway even though it had been deleted
+        // saved even though it had been deleted.
         quoteIsMarkedForDeletion = true
         if let context = container?.viewContext, let quoteToDelete = quoteToDisplay {
             context.delete(quoteToDelete)
@@ -214,8 +218,8 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
     
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        if quoteToDisplay != nil, let text = quoteText?.text {
-            if text.isEmpty {
+        if allOutletsSet, !quoteIsMarkedForDeletion {
+            if quoteText.isEmpty, creator.isEmpty, descriptionOfHowFound.isEmpty, interpretation.isEmpty {
                 deleteQuote()
             } else {
                 saveQuote()
@@ -225,5 +229,11 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
     
     private struct Constants {
         static let maxTextViewHeight: CGFloat = 125
+    }
+}
+
+extension UITextView {
+    var isEmpty: Bool {
+        return self.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 }

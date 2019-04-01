@@ -72,7 +72,7 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "QuoteCell", for: indexPath)
         let quote = quotes[indexPath.row]
-        cell.textLabel?.text = quote.text
+        cell.textLabel?.text = (quote.text?.isEmpty ?? true) ? "Quote" : quote.text
         cell.detailTextLabel?.text = quote.creator
         return cell
     }
