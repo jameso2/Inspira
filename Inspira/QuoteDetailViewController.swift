@@ -25,6 +25,7 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
     
     // MARK: Outlets
     
+    @IBOutlet weak var scrollViewContent: UIView!
     @IBOutlet private weak var quoteText: UITextView! {
         didSet {
             configureTextView(quoteText)

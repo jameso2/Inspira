@@ -40,18 +40,26 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
         }
     }
     
-    private func deleteEmptyQuotes(from context: NSManagedObjectContext, exceptAt indices: [Array<Quote>.Index] = [], shouldAddNewQuote: Bool = false) -> Int {
+    private func deleteEmptyQuotes(from context: NSManagedObjectContext, exceptAt index: Int? = nil, shouldAddNewQuote: Bool = false) -> Int {
         var counter = 1
-        let indicesOfQuotesToDelete = quotes.indices.filter { quotes[$0].isEmpty && !indices.contains($0) }
-        for index in indicesOfQuotesToDelete.sorted(by: >) {
-            let quote = quotes[index]
+        let indicesOfQuotesToDelete = quotes.indices.filter {
+            if let indexOfQuoteNotToDelete = index {
+                return quotes[$0].isEmpty && indexOfQuoteNotToDelete != $0
+            }
+            return quotes[$0].isEmpty
+        }
+        for indexToDelete in indicesOfQuotesToDelete.sorted(by: >) {
+            let quote = quotes[indexToDelete]
             Timer.scheduledTimer(withTimeInterval: 0.3 * Double(counter), repeats: false) { [weak self] timer in
                 context.delete(quote)
                 try? context.save()
-                self?.quotes.remove(at: index)
-                self?.tableView.deleteRows(at: [IndexPath(row: index, section: 0)], with: .fade)
+                self?.quotes.remove(at: indexToDelete)
+                self?.tableView.deleteRows(at: [IndexPath(row: indexToDelete, section: 0)], with: .fade)
             }
             counter += 1
+            if index != nil, index! > indexToDelete {
+                index! -= 1
+            }
         }
         return counter
     }
@@ -60,15 +68,21 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
         if let context = container?.viewContext {
             let emptyQuotesCounter = deleteEmptyQuotes(from: context, shouldAddNewQuote: true)
             Timer.scheduledTimer(withTimeInterval: 0.3 * Double(emptyQuotesCounter), repeats: false) { [weak self] timer in
-                let newQuote = Quote(context: context)
-                newQuote.dateCreated = Date(timeIntervalSinceNow: 0)
-                try? context.save()
-                self?.quotes.insert(newQuote, at: 0)
+                self?.addQuote(to: context)
                 self?.performSegue(withIdentifier: "ShowQuoteDetail", sender: IndexPath(row: 0, section: 0))
                 self?.tableView.insertRows(at: [IndexPath(row: 0, section: 0)], with: .fade)
             }
-            hideMasterView(delay: 0.3 * Double(emptyQuotesCounter) + 0.7)
+            if splitViewController?.viewControllers.count == 2 {
+                hideMasterView(delay: 0.3 * Double(emptyQuotesCounter) + 0.7)
+            }
         }
+    }
+    
+    private func addQuote(to context: NSManagedObjectContext) {
+        let newQuote = Quote(context: context)
+        newQuote.dateCreated = Date(timeIntervalSinceNow: 0)
+        try? context.save()
+        quotes.insert(newQuote, at: 0)
     }
     
     override func viewDidAppear(_ animated: Bool) { // What's even better is using a fetched results controller
@@ -119,9 +133,12 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         // Delete all empty quotes except the one at index path (if it is empty)
         if let context = container?.viewContext {
-            let numQuotesDeleted = deleteEmptyQuotes(from: context, exceptAt: [indexPath.row])
-            performSegue(withIdentifier: "ShowQuoteDetail", sender: indexPath)
-            hideMasterView(delay: 0.3 * Double(numQuotesDeleted))
+            var quoteIndex: Int! = indexPath.row // the index path of the selected quote might change after empty quotes are deleted
+            let numQuotesDeleted = deleteEmptyQuotes(from: context, exceptAt: quoteIndex)
+            performSegue(withIdentifier: "ShowQuoteDetail", sender: IndexPath(row: quoteIndex, section: 0))
+            if splitViewController?.viewControllers.count == 2 {
+                hideMasterView(delay: 0.3 * Double(numQuotesDeleted))
+            }
         }
     }
 
@@ -150,32 +167,77 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "ShowQuoteDetail" {
             if let quoteDetailVC = segue.destination.contents as? QuoteDetailViewController {
-                quoteDetailVC.container = container
-                quoteDetailVC.quoteDeletionHandler = { [unowned self, unowned quoteDetailVC] in
-                    // Display the next quote (if any)
-                    let indexOfNextQuote: IndexPath
-                    if let indexPath = sender as? IndexPath {
-                        indexOfNextQuote = IndexPath(row: indexPath.row + 1, section: 0)
-                    } else {
-                        indexOfNextQuote = IndexPath(row: 0, section: 0)
-                    }
-                    if indexOfNextQuote.row < self.quotes.count {
-                        quoteDetailVC.quoteToDisplay = self.quotes[indexOfNextQuote.row]
-                    } else {
-                        if let splitViewVCs = quoteDetailVC.splitViewController?.viewControllers, splitViewVCs.count > 1 {
-                            splitViewVCs[1].view.isHidden = true
-                        } else if let navcon = quoteDetailVC.navigationController?.navigationController {
-                            navcon.popViewController(animated: true)
+                if let indexPathOfQuoteToDisplay = sender as? IndexPath {
+                    quoteDetailVC.container = container
+                    quoteDetailVC.quoteDeletionHandler = { [weak self, unowned quoteDetailVC] in
+                        self?.loadQuotesFromDatabase()
+                        let indexPathOfNextQuote = self?.getIndexPathOfNextQuote(currentIndexPath: indexPathOfQuoteToDisplay)
+                        let nextQuote: Quote?
+                        if indexPathOfNextQuote != nil {
+                            nextQuote = self?.quotes[indexPathOfNextQuote!.row]
+                            self?.animateQuoteDeletion(with: quoteDetailVC, nextQuoteToDisplay: nextQuote)
+                        } else if let context = self?.container?.viewContext {
+                            self?.addQuote(to: context)
+                            nextQuote = self?.quotes[0]
+                            self?.animateQuoteDeletion(with: quoteDetailVC, nextQuoteToDisplay: nextQuote)
                         }
-//                            quoteDetailVC.view.isHidden = true
+                        
+//                        let indexOfNextQuote: IndexPath
+//                        if let indexPath = sender as? IndexPath {
+//                            indexOfNextQuote = IndexPath(row: indexPath.row + 1, section: 0)
+//                        } else {
+//                            indexOfNextQuote = IndexPath(row: 0, section: 0)
+//                        }
+//                        if indexOfNextQuote.row < self.quotes.count {
+//                            UIView.transition(with: quoteDetailVC.view,
+//                                              duration: 0.6,
+//                                              options: .transitionFlipFromTop,
+//                                              animations: {
+//                                                  quoteDetailVC.quoteToDisplay = self.quotes[indexOfNextQuote.row]
+//                                              })
+//    //                        quoteDetailVC.quoteToDisplay = self.quotes[indexOfNextQuote.row]
+//                        } else {
+//                            if let splitViewVCs = quoteDetailVC.splitViewController?.viewControllers, splitViewVCs.count > 1 {
+//                                splitViewVCs[1].view.isHidden = true
+//                            } else if let navcon = quoteDetailVC.navigationController?.navigationController {
+//                                navcon.popViewController(animated: true)
+//                            }
+//    //                            quoteDetailVC.view.isHidden = true
+//                        }
                     }
-                }
-                if let indexPath = sender as? IndexPath {
-                    quoteDetailVC.quoteToDisplay = quotes[indexPath.row]
-                } else {
-                    quoteDetailVC.quoteToDisplay = quotes[0]
+                    quoteDetailVC.quoteToDisplay = quotes[indexPathOfQuoteToDisplay.row]
                 }
             }
+        }
+    }
+    
+    private func getIndexPathOfNextQuote(currentIndexPath: IndexPath) -> IndexPath? {
+        if currentIndexPath.row < quotes.count {
+            return IndexPath(row: currentIndexPath.row, section: currentIndexPath.section)
+        } else if currentIndexPath.row - 1 >= 0 {
+            return IndexPath(row: currentIndexPath.row - 1, section: currentIndexPath.section)
+        } else {
+            return nil
+        }
+    }
+    
+    private func animateQuoteDeletion(with quoteDetailViewController: QuoteDetailViewController, nextQuoteToDisplay: Quote?) {
+        if let deleteButtonView = quoteDetailViewController.deleteButton.value(forKey: "view") as? UIView {
+            let quoteDetailViewOriginalFrame = quoteDetailViewController.scrollViewContent.frame
+            let newOrigin = deleteButtonView.convert(deleteButtonView.frame.origin, to: quoteDetailViewController.scrollViewContent.superview)
+            UIViewPropertyAnimator.runningPropertyAnimator(withDuration: 0.6,
+                                                           delay: 0,
+                                                           options: [.curveEaseInOut],
+                                                           animations: {
+                                                               quoteDetailViewController.scrollViewContent.frame = CGRect(origin: newOrigin, size: CGSize.zero)
+                                                               quoteDetailViewController.scrollViewContent.alpha = 0
+                                                           },
+                                                           completion: { completed in
+                                                               quoteDetailViewController.quoteToDisplay = nextQuoteToDisplay
+                                                               quoteDetailViewController.scrollViewContent.frame = quoteDetailViewOriginalFrame
+                                                               quoteDetailViewController.scrollViewContent.alpha = 1
+                                                           }
+            )
         }
     }
 }
