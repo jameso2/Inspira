@@ -28,24 +28,22 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
         }
     }
     
-    private func deleteEmptyQuotes(from context: NSManagedObjectContext) -> Int {
+    private func deleteEmptyQuotes(from context: NSManagedObjectContext, exceptAt indices: [Array<Quote>.Index] = []) -> Int {
         var emptyQuotesCounter = 0
-        for quote in quotes {
-            if quote.isEmpty {
-                UIView.animate(withDuration: 0.2,
-                               delay: 0.2 * Double(emptyQuotesCounter),
-                               options: [],
-                               animations: { [weak self] in
-                                   context.delete(quote)
-                                   if let quoteIndex = self?.quotes.firstIndex(of: quote) {
-                                       self?.quotes.remove(at: quoteIndex)
-                                       self?.tableView.deleteRows(at: [IndexPath(row: quoteIndex, section: 0)], with: .fade)
-                                       try? context.save()
-                                   }
-                               }
-                              )
-                emptyQuotesCounter += 1
-            }
+        let indicesOfQuotesToDelete = quotes.indices.filter { quotes[$0].isEmpty && !indices.contains($0) }
+        for index in indicesOfQuotesToDelete.sorted(by: >) {
+            let quote = quotes[index]
+            UIView.animate(withDuration: 0.2,
+                           delay: 0.2 * Double(emptyQuotesCounter),
+                           options: [],
+                           animations: { [weak self] in
+                               context.delete(quote)
+                               self?.quotes.remove(at: index)
+                               self?.tableView.deleteRows(at: [IndexPath(row: index, section: 0)], with: .fade)
+                               try? context.save()
+                           }
+                          )
+            emptyQuotesCounter += 1
         }
         return emptyQuotesCounter
     }
@@ -58,8 +56,9 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
                            options: [],
                            animations: { [weak self] in
                                let newQuote = Quote(context: context)
+                               newQuote.dateCreated = Date(timeIntervalSinceNow: 0)
                                try? context.save()
-                               self?.quotes.append(newQuote)
+                               self?.quotes.insert(newQuote, at: 0)
                                self?.tableView.insertRows(at: [IndexPath(row: 0, section: 0)], with: .fade)
                                self?.performSegue(withIdentifier: "ShowQuoteDetail", sender: IndexPath(row: 0, section: 0))
                            }
@@ -120,6 +119,10 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
     }
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        // Delete all empty quotes except the one at index path (if it is empty)
+        if let context = container?.viewContext {
+            _ = deleteEmptyQuotes(from: context, exceptAt: [indexPath.row])
+        }
         performSegue(withIdentifier: "ShowQuoteDetail", sender: indexPath)
         UIView.animate(withDuration: 0.5, animations: {
             self.splitViewController?.preferredDisplayMode = .primaryHidden

@@ -12,8 +12,9 @@ import CoreData
 class Quote: NSManagedObject {
     class func loadAllQuotes(from context: NSManagedObjectContext) throws -> [Quote] {
         let request: NSFetchRequest<Quote> = Quote.fetchRequest()
+        request.sortDescriptors = [NSSortDescriptor(key: "dateCreated", ascending: false)]
         do {
-            return try context.fetch(request).reversed()
+            return try context.fetch(request)
         } catch {
             throw error
         }
