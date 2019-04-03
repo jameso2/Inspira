@@ -40,40 +40,41 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
         }
     }
     
-    private func deleteEmptyQuotes(from context: NSManagedObjectContext, exceptAt index: Int? = nil, shouldAddNewQuote: Bool = false) -> Int {
-        var counter = 1
-        let indicesOfQuotesToDelete = quotes.indices.filter {
-            if let indexOfQuoteNotToDelete = index {
-                return quotes[$0].isEmpty && indexOfQuoteNotToDelete != $0
-            }
-            return quotes[$0].isEmpty
+    private func removeQuote(at index: Int, from context: NSManagedObjectContext) {
+        context.delete(quotes[index])
+        try? context.save()
+        quotes.remove(at: index)
+        tableView.deleteRows(at: [IndexPath(row: index, section: 0)], with: .fade)
+    }
+    
+    private func findAndDeleteEmptyQuote(from context: NSManagedObjectContext) {
+        let indicesOfQuotesToDelete = quotes.indices.filter { quotes[$0].isEmpty }
+        assert(indicesOfQuotesToDelete.count <= 1)
+        if indicesOfQuotesToDelete.count == 1 {
+            removeQuote(at: indicesOfQuotesToDelete[0], from: context)
         }
-        for indexToDelete in indicesOfQuotesToDelete.sorted(by: >) {
-            let quote = quotes[indexToDelete]
-            Timer.scheduledTimer(withTimeInterval: 0.3 * Double(counter), repeats: false) { [weak self] timer in
-                context.delete(quote)
-                try? context.save()
-                self?.quotes.remove(at: indexToDelete)
-                self?.tableView.deleteRows(at: [IndexPath(row: indexToDelete, section: 0)], with: .fade)
-            }
-            counter += 1
-            if index != nil, index! > indexToDelete {
-                index! -= 1
-            }
+    }
+    
+    private func findAndDeleteEmptyQuote(from context: NSManagedObjectContext, exceptAt index: inout Int) {
+        let indicesOfQuotesToDelete = quotes.indices.filter { quotes[$0].isEmpty && $0 != index }
+        assert(indicesOfQuotesToDelete.count <= 1)
+        if indicesOfQuotesToDelete.count == 1 {
+            let indexOfQuoteToDelete = indicesOfQuotesToDelete[0]
+            index -= (indexOfQuoteToDelete < index ? 1 : 0)
+            removeQuote(at: indexOfQuoteToDelete, from: context)
         }
-        return counter
     }
     
     @IBAction func createNewQuote(_ sender: UIBarButtonItem) {
         if let context = container?.viewContext {
-            let emptyQuotesCounter = deleteEmptyQuotes(from: context, shouldAddNewQuote: true)
-            Timer.scheduledTimer(withTimeInterval: 0.3 * Double(emptyQuotesCounter), repeats: false) { [weak self] timer in
+            findAndDeleteEmptyQuote(from: context)
+            Timer.scheduledTimer(withTimeInterval: 0.2, repeats: false) { [weak self] timer in
                 self?.addQuote(to: context)
-                self?.performSegue(withIdentifier: "ShowQuoteDetail", sender: IndexPath(row: 0, section: 0))
                 self?.tableView.insertRows(at: [IndexPath(row: 0, section: 0)], with: .fade)
-            }
-            if splitViewController?.viewControllers.count == 2 {
-                hideMasterView(delay: 0.3 * Double(emptyQuotesCounter) + 0.7)
+                self?.performSegue(withIdentifier: "ShowQuoteDetail", sender: IndexPath(row: 0, section: 0))
+                if self?.splitViewController?.viewControllers.count == 2 {
+                    self?.hideMasterView(delay: 0.8)
+                }
             }
         }
     }
@@ -133,11 +134,11 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         // Delete all empty quotes except the one at index path (if it is empty)
         if let context = container?.viewContext {
-            var quoteIndex: Int! = indexPath.row // the index path of the selected quote might change after empty quotes are deleted
-            let numQuotesDeleted = deleteEmptyQuotes(from: context, exceptAt: quoteIndex)
+            var quoteIndex = indexPath.row // the index path of the selected quote might change after empty quotes are deleted
+            findAndDeleteEmptyQuote(from: context, exceptAt: &quoteIndex)
             performSegue(withIdentifier: "ShowQuoteDetail", sender: IndexPath(row: quoteIndex, section: 0))
             if splitViewController?.viewControllers.count == 2 {
-                hideMasterView(delay: 0.3 * Double(numQuotesDeleted))
+                hideMasterView(delay: 0.8)
             }
         }
     }
@@ -168,6 +169,7 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
         if segue.identifier == "ShowQuoteDetail" {
             if let quoteDetailVC = segue.destination.contents as? QuoteDetailViewController {
                 if let indexPathOfQuoteToDisplay = sender as? IndexPath {
+                    loadQuotesFromDatabase()
                     quoteDetailVC.container = container
                     quoteDetailVC.quoteDeletionHandler = { [weak self, unowned quoteDetailVC] in
                         self?.loadQuotesFromDatabase()
@@ -175,35 +177,12 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
                         let nextQuote: Quote?
                         if indexPathOfNextQuote != nil {
                             nextQuote = self?.quotes[indexPathOfNextQuote!.row]
-                            self?.animateQuoteDeletion(with: quoteDetailVC, nextQuoteToDisplay: nextQuote)
+                            quoteDetailVC.animateQuoteDeletion(nextQuoteToDisplay: nextQuote)
                         } else if let context = self?.container?.viewContext {
                             self?.addQuote(to: context)
                             nextQuote = self?.quotes[0]
-                            self?.animateQuoteDeletion(with: quoteDetailVC, nextQuoteToDisplay: nextQuote)
+                            quoteDetailVC.animateQuoteDeletion(nextQuoteToDisplay: nextQuote)
                         }
-                        
-//                        let indexOfNextQuote: IndexPath
-//                        if let indexPath = sender as? IndexPath {
-//                            indexOfNextQuote = IndexPath(row: indexPath.row + 1, section: 0)
-//                        } else {
-//                            indexOfNextQuote = IndexPath(row: 0, section: 0)
-//                        }
-//                        if indexOfNextQuote.row < self.quotes.count {
-//                            UIView.transition(with: quoteDetailVC.view,
-//                                              duration: 0.6,
-//                                              options: .transitionFlipFromTop,
-//                                              animations: {
-//                                                  quoteDetailVC.quoteToDisplay = self.quotes[indexOfNextQuote.row]
-//                                              })
-//    //                        quoteDetailVC.quoteToDisplay = self.quotes[indexOfNextQuote.row]
-//                        } else {
-//                            if let splitViewVCs = quoteDetailVC.splitViewController?.viewControllers, splitViewVCs.count > 1 {
-//                                splitViewVCs[1].view.isHidden = true
-//                            } else if let navcon = quoteDetailVC.navigationController?.navigationController {
-//                                navcon.popViewController(animated: true)
-//                            }
-//    //                            quoteDetailVC.view.isHidden = true
-//                        }
                     }
                     quoteDetailVC.quoteToDisplay = quotes[indexPathOfQuoteToDisplay.row]
                 }
@@ -219,27 +198,7 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
         } else {
             return nil
         }
-    }
-    
-    private func animateQuoteDeletion(with quoteDetailViewController: QuoteDetailViewController, nextQuoteToDisplay: Quote?) {
-        if let deleteButtonView = quoteDetailViewController.deleteButton.value(forKey: "view") as? UIView {
-            let quoteDetailViewOriginalFrame = quoteDetailViewController.scrollViewContent.frame
-            let newOrigin = deleteButtonView.convert(deleteButtonView.frame.origin, to: quoteDetailViewController.scrollViewContent.superview)
-            UIViewPropertyAnimator.runningPropertyAnimator(withDuration: 0.6,
-                                                           delay: 0,
-                                                           options: [.curveEaseInOut],
-                                                           animations: {
-                                                               quoteDetailViewController.scrollViewContent.frame = CGRect(origin: newOrigin, size: CGSize.zero)
-                                                               quoteDetailViewController.scrollViewContent.alpha = 0
-                                                           },
-                                                           completion: { completed in
-                                                               quoteDetailViewController.quoteToDisplay = nextQuoteToDisplay
-                                                               quoteDetailViewController.scrollViewContent.frame = quoteDetailViewOriginalFrame
-                                                               quoteDetailViewController.scrollViewContent.alpha = 1
-                                                           }
-            )
-        }
-    }
+    }    
 }
 
 extension UIViewController {

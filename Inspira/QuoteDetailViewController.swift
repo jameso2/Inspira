@@ -217,16 +217,36 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
         }
     }
     
-//    override func viewWillDisappear(_ animated: Bool) {
-//        super.viewWillDisappear(animated)
-//        if allOutletsSet, !quoteIsMarkedForDeletion {
-//            if quoteText.isEmpty, creator.isEmpty, descriptionOfHowFound.isEmpty, interpretation.isEmpty {
-//                deleteQuote()
-//            } else {
-//                saveQuote()
-//            }
-//        }
-//    }
+    func animateQuoteDeletion(nextQuoteToDisplay: Quote?) {
+        if let deleteButtonView = deleteButton.value(forKey: "view") as? UIView {
+            let scrollViewContentOriginalFrame = scrollViewContent.frame
+            let newOrigin = deleteButtonView.superview!.convert(deleteButtonView.frame.origin, to: scrollViewContent.superview)
+            UIViewPropertyAnimator.runningPropertyAnimator(withDuration: 0.6,
+                                                           delay: 0,
+                                                           options: [.curveEaseInOut],
+                                                           animations: { [weak self] in
+                                                               self?.scrollViewContent.frame = CGRect(origin: newOrigin, size: CGSize.zero)
+                                                               self?.scrollViewContent.alpha = 0
+                                                           },
+                                                           completion: { [weak self] completed in
+                                                               self?.quoteToDisplay = nextQuoteToDisplay
+                                                               self?.scrollViewContent.frame = scrollViewContentOriginalFrame
+                                                               self?.scrollViewContent.alpha = 1
+                                                           }
+            )
+        }
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        if allOutletsSet, !quoteIsMarkedForDeletion {
+            if quoteText.isEmpty, creator.isEmpty, descriptionOfHowFound.isEmpty, interpretation.isEmpty {
+                deleteQuote()
+            } else {
+                saveQuote()
+            }
+        }
+    }
     
     private struct Constants {
         static let maxTextViewHeight: CGFloat = 125
