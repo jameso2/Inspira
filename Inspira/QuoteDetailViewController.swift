@@ -15,6 +15,9 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
     
     var quoteToDisplay: Quote? {
         didSet {
+            if quoteText != nil, quoteText.isEmpty {
+                quoteText.becomeFirstResponder()
+            }
             updateViewFromModel()
         }
     }
