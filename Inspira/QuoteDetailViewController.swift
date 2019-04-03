@@ -230,6 +230,7 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
                                                            },
                                                            completion: { [weak self] completed in
                                                                self?.quoteToDisplay = nextQuoteToDisplay
+                                                               self?.quoteIsMarkedForDeletion = false
                                                                self?.scrollViewContent.frame = scrollViewContentOriginalFrame
                                                                self?.scrollViewContent.alpha = 1
                                                            }
@@ -243,6 +244,7 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
             if quoteText.isEmpty, creator.isEmpty, descriptionOfHowFound.isEmpty, interpretation.isEmpty {
                 deleteQuote()
             } else {
+                print("quote will be saved")
                 saveQuote()
             }
         }
