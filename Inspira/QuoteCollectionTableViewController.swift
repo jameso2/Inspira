@@ -13,6 +13,7 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
 
     var container: NSPersistentContainer? = (UIApplication.shared.delegate as? AppDelegate)?.persistentContainer
     var quotes = [Quote]()
+    var indexPathOfQuoteBeingDisplayed: IndexPath?
     
     private func loadQuotesFromDatabase() {
         // Note: This operation cannot be done on the background queue because managed objects
@@ -132,7 +133,6 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
     }
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        // Delete all empty quotes except the one at index path (if it is empty)
         if let context = container?.viewContext {
             var quoteIndex = indexPath.row // the index path of the selected quote might change after empty quotes are deleted
             findAndDeleteEmptyQuote(from: context, exceptAt: &quoteIndex)
@@ -143,25 +143,20 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
         }
     }
 
-    /*
-    // Override to support conditional editing of the table view.
-    override func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
-        // Return false if you do not want the specified item to be editable.
-        return true
+    override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+        if editingStyle == .delete, let context = container?.viewContext {
+            removeQuote(at: indexPath.row, from: context)
+            if splitViewController?.viewControllers.count == 2, let quoteDetailVC = splitViewController?.viewControllers[1].contents as? QuoteDetailViewController {
+                if let displayedQuoteIndexPath = indexPathOfQuoteBeingDisplayed, indexPath == displayedQuoteIndexPath {
+                    if quotes.count > 0 {
+                        displayNextQuote(in: quoteDetailVC, deletedQuoteIndexPath: indexPath)
+                    } else {
+                        quoteDetailVC.animateQuoteDeletion(nextQuoteToDisplay: nil)
+                    }
+                }
+            }
+        }
     }
-    */
-
-    /*
-    // Override to support editing the table view.
-    override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCellEditingStyle, forRowAt indexPath: IndexPath) {
-        if editingStyle == .delete {
-            // Delete the row from the data source
-            tableView.deleteRows(at: [indexPath], with: .fade)
-        } else if editingStyle == .insert {
-            // Create a new instance of the appropriate class, insert it into the array, and add a new row to the table view
-        }    
-    }
-    */
 
     // MARK: - Navigation
 
@@ -169,19 +164,14 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
         if segue.identifier == "ShowQuoteDetail" {
             if let quoteDetailVC = segue.destination.contents as? QuoteDetailViewController {
                 if let indexPathOfQuoteToDisplay = sender as? IndexPath {
-                    loadQuotesFromDatabase()
+                    indexPathOfQuoteBeingDisplayed = indexPathOfQuoteToDisplay
                     quoteDetailVC.container = container
                     quoteDetailVC.quoteDeletionHandler = { [weak self, unowned quoteDetailVC] in
                         self?.loadQuotesFromDatabase()
-                        let indexPathOfNextQuote = self?.getIndexPathOfNextQuote(currentIndexPath: indexPathOfQuoteToDisplay)
-                        let nextQuote: Quote?
-                        if indexPathOfNextQuote != nil {
-                            nextQuote = self?.quotes[indexPathOfNextQuote!.row]
-                            quoteDetailVC.animateQuoteDeletion(nextQuoteToDisplay: nextQuote)
-                        } else if let context = self?.container?.viewContext {
-                            self?.addQuote(to: context)
-                            nextQuote = self?.quotes[0]
-                            quoteDetailVC.animateQuoteDeletion(nextQuoteToDisplay: nextQuote)
+//                        print("Number of quotes is: \(self?.quotes.count)")
+//                        print("Index of quote just deleted is: \(self?.indexPathOfQuoteBeingDisplayed?.row)")
+                        if let indexPathOfQuoteJustDeleted = self?.indexPathOfQuoteBeingDisplayed {
+                            self?.displayNextQuote(in: quoteDetailVC, deletedQuoteIndexPath: indexPathOfQuoteJustDeleted)
                         }
                     }
                     quoteDetailVC.quoteToDisplay = quotes[indexPathOfQuoteToDisplay.row]
@@ -190,15 +180,28 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
         }
     }
     
-    private func getIndexPathOfNextQuote(currentIndexPath: IndexPath) -> IndexPath? {
-        if currentIndexPath.row < quotes.count {
-            return IndexPath(row: currentIndexPath.row, section: currentIndexPath.section)
-        } else if currentIndexPath.row - 1 >= 0 {
-            return IndexPath(row: currentIndexPath.row - 1, section: currentIndexPath.section)
+    private func displayNextQuote(in quoteDetailVC: QuoteDetailViewController, deletedQuoteIndexPath: IndexPath) {
+        let indexPathOfNextQuote = getIndexPathOfNextQuote(deletedQuoteIndexPath: deletedQuoteIndexPath)
+        if indexPathOfNextQuote != nil {
+            quoteDetailVC.animateQuoteDeletion(nextQuoteToDisplay: quotes[indexPathOfNextQuote!.row])
+            indexPathOfQuoteBeingDisplayed = indexPathOfNextQuote
+        } else if let context = container?.viewContext {
+            addQuote(to: context)
+            quoteDetailVC.animateQuoteDeletion(nextQuoteToDisplay: quotes[0])
+            indexPathOfQuoteBeingDisplayed = IndexPath(row: 0, section: 0)
+        }
+//        print("Index of quote now being displayed is: \(indexPathOfQuoteBeingDisplayed?.row)")
+    }
+    
+    private func getIndexPathOfNextQuote(deletedQuoteIndexPath: IndexPath) -> IndexPath? {
+        if deletedQuoteIndexPath.row < quotes.count {
+            return IndexPath(row: deletedQuoteIndexPath.row, section: deletedQuoteIndexPath.section)
+        } else if deletedQuoteIndexPath.row - 1 >= 0 {
+            return IndexPath(row: deletedQuoteIndexPath.row - 1, section: deletedQuoteIndexPath.section)
         } else {
             return nil
         }
-    }    
+    }
 }
 
 extension UIViewController {
