@@ -153,6 +153,7 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
             imageView?.image = UIImage(data: imageData)
             imageView?.sizeToFit()
         }
+        deleteButton?.isEnabled = quoteToDisplay != nil
     }
     
     override func viewDidLoad() {

@@ -88,18 +88,33 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
     }
     
     private func displayInitialQuote(in quoteDetailVC: QuoteDetailViewController) {
-        if quotes.count > 0 {
-            quoteDetailVC.quoteToDisplay = quotes[0]
-            indexPathOfQuoteBeingDisplayed = IndexPath(row: 0, section: 0)
+        let indexPathOfQuoteToDisplay = quotes.count > 0 ? IndexPath(row: 0, section: 0) : nil
+        configure(quoteDetailVC, indexPathOfQuoteToDisplay: indexPathOfQuoteToDisplay)
+    }
+    
+    func splitViewController(_ svc: UISplitViewController, willChangeTo displayMode: UISplitViewController.DisplayMode) {
+        if splitViewController?.viewControllers.count == 2, let quoteDetailVC = splitViewController?.viewControllers[1].contents as? QuoteDetailViewController {
+            if displayMode == .primaryHidden {
+                if quoteDetailVC.quoteToDisplay == nil, let context = container?.viewContext {
+                    addQuote(to: context)
+                    tableView.insertRows(at: [IndexPath(row: 0, section: 0)], with: .fade)
+                    quoteDetailVC.quoteToDisplay = quotes[0]
+                }
+            }
+        }
+    }
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        loadQuotesFromDatabase()
+        if splitViewController?.viewControllers.count == 2, let quoteDetailVC = splitViewController?.viewControllers[1].contents as? QuoteDetailViewController {
+            displayInitialQuote(in: quoteDetailVC)
         }
     }
     
     override func viewDidAppear(_ animated: Bool) { // What's even better is using a fetched results controller
         super.viewDidAppear(animated)
         loadQuotesFromDatabase()
-        if splitViewController?.viewControllers.count == 2, let quoteDetailVC = splitViewController?.viewControllers[1].contents as? QuoteDetailViewController {
-            displayInitialQuote(in: quoteDetailVC)
-        }
     }
     
     override func viewWillLayoutSubviews() {
@@ -115,12 +130,7 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
     }
     
     func splitViewController(_ splitViewController: UISplitViewController, collapseSecondary secondaryViewController: UIViewController, onto primaryViewController: UIViewController) -> Bool {
-        if let quoteDetailVC = secondaryViewController.contents as? QuoteDetailViewController {
-            if quoteDetailVC.quoteDeletionHandler == nil {
-                return true
-            }
-        }
-        return false
+        return true
     }
     
 
@@ -174,19 +184,23 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
         if segue.identifier == "ShowQuoteDetail" {
             if let quoteDetailVC = segue.destination.contents as? QuoteDetailViewController {
                 if let indexPathOfQuoteToDisplay = sender as? IndexPath {
-                    indexPathOfQuoteBeingDisplayed = indexPathOfQuoteToDisplay
-                    quoteDetailVC.container = container
-                    quoteDetailVC.quoteDeletionHandler = { [weak self, unowned quoteDetailVC] in
-                        self?.loadQuotesFromDatabase()
-//                        print("Number of quotes is: \(self?.quotes.count)")
-//                        print("Index of quote just deleted is: \(self?.indexPathOfQuoteBeingDisplayed?.row)")
-                        if let indexPathOfQuoteJustDeleted = self?.indexPathOfQuoteBeingDisplayed {
-                            self?.displayNextQuote(in: quoteDetailVC, deletedQuoteIndexPath: indexPathOfQuoteJustDeleted)
-                        }
-                    }
-                    quoteDetailVC.quoteToDisplay = quotes[indexPathOfQuoteToDisplay.row]
+                    configure(quoteDetailVC, indexPathOfQuoteToDisplay: indexPathOfQuoteToDisplay)
                 }
             }
+        }
+    }
+    
+    private func configure(_ quoteDetailVC: QuoteDetailViewController, indexPathOfQuoteToDisplay: IndexPath?) {
+        quoteDetailVC.container = container
+        quoteDetailVC.quoteDeletionHandler = { [weak self, unowned quoteDetailVC] in
+            self?.loadQuotesFromDatabase()
+            if let indexPathOfQuoteJustDeleted = self?.indexPathOfQuoteBeingDisplayed {
+                self?.displayNextQuote(in: quoteDetailVC, deletedQuoteIndexPath: indexPathOfQuoteJustDeleted)
+            }
+        }
+        indexPathOfQuoteBeingDisplayed = indexPathOfQuoteToDisplay
+        if indexPathOfQuoteToDisplay != nil {
+            quoteDetailVC.quoteToDisplay = quotes[indexPathOfQuoteToDisplay!.row]
         }
     }
     
@@ -200,7 +214,6 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
             quoteDetailVC.animateQuoteDeletion(nextQuoteToDisplay: quotes[0])
             indexPathOfQuoteBeingDisplayed = IndexPath(row: 0, section: 0)
         }
-//        print("Index of quote now being displayed is: \(indexPathOfQuoteBeingDisplayed?.row)")
     }
     
     private func getIndexPathOfNextQuote(deletedQuoteIndexPath: IndexPath) -> IndexPath? {
