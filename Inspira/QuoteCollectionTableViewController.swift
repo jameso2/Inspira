@@ -87,9 +87,19 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
         quotes.insert(newQuote, at: 0)
     }
     
+    private func displayInitialQuote(in quoteDetailVC: QuoteDetailViewController) {
+        if quotes.count > 0 {
+            quoteDetailVC.quoteToDisplay = quotes[0]
+            indexPathOfQuoteBeingDisplayed = IndexPath(row: 0, section: 0)
+        }
+    }
+    
     override func viewDidAppear(_ animated: Bool) { // What's even better is using a fetched results controller
         super.viewDidAppear(animated)
         loadQuotesFromDatabase()
+        if splitViewController?.viewControllers.count == 2, let quoteDetailVC = splitViewController?.viewControllers[1].contents as? QuoteDetailViewController {
+            displayInitialQuote(in: quoteDetailVC)
+        }
     }
     
     override func viewWillLayoutSubviews() {

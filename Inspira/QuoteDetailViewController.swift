@@ -15,10 +15,11 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
     
     var quoteToDisplay: Quote? {
         didSet {
-            if quoteText != nil, quoteText.isEmpty {
+            updateViewFromModel()
+            if quoteText != nil {
                 quoteText.becomeFirstResponder()
             }
-            updateViewFromModel()
+
         }
     }
     
@@ -247,7 +248,6 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
             if quoteText.isEmpty, creator.isEmpty, descriptionOfHowFound.isEmpty, interpretation.isEmpty {
                 deleteQuote()
             } else {
-                print("quote will be saved")
                 saveQuote()
             }
         }
