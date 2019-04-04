@@ -8,8 +8,9 @@
 
 import UIKit
 import CoreData
+import MobileCoreServices
 
-class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFieldDelegate {
+class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFieldDelegate, UINavigationControllerDelegate, UIImagePickerControllerDelegate {
     
     // MARK: Model
     
@@ -50,8 +51,74 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
     @IBOutlet private weak var interpretationHeight: NSLayoutConstraint!
     
     @IBOutlet private weak var imageView: UIImageView!
+    
+    @IBOutlet weak var imagePlaceholderView: UIView! {
+        didSet {
+            configureImagePlaceholderView()
+        }
+    }
+    
+    @IBOutlet weak var imagePlaceholderViewHeight: NSLayoutConstraint! {
+        didSet {
+            if UIDevice().userInterfaceIdiom == .pad {
+                imagePlaceholderViewHeight.constant = 425
+            }
+        }
+    }
+    
+    
     @IBOutlet weak var quoteRequirementMessage: UILabel! { didSet { quoteRequirementMessage.isHidden = true } }
     @IBOutlet weak var deleteButton: UIBarButtonItem!
+    
+    // MARK: Image view functionality
+    
+    private func configureImagePlaceholderView() {
+        imagePlaceholderView.layer.cornerRadius = 5.0
+        let tap = UITapGestureRecognizer(target: self, action: #selector(presentAlertToSetImage(recognizer:)))
+        imagePlaceholderView.addGestureRecognizer(tap)
+    }
+    
+    @objc private func presentAlertToSetImage(recognizer: UITapGestureRecognizer) {
+        let alert = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
+        alert.addAction(UIAlertAction(title: "Take Photo",
+                                      style: .default,
+                                      handler: { [weak self] action in
+                                          self?.setImage(from: .camera)
+                                      }
+        ))
+        alert.addAction(UIAlertAction(title: "Choose Photo",
+                                      style: .default,
+                                      handler: { [weak self] action in
+                                          self?.setImage(from: .photoLibrary)
+                                      }
+        ))
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+        alert.modalPresentationStyle = .popover
+        let ppc = alert.popoverPresentationController
+        ppc?.sourceView = imagePlaceholderView
+        ppc?.sourceRect = CGRect(origin: recognizer.location(in: imagePlaceholderView), size: CGSize.zero)
+        present(alert, animated: true, completion: nil)
+    }
+    
+    private func setImage(from sourceType: UIImagePickerController.SourceType) {
+        let picker = UIImagePickerController()
+        let mediaTypeImage = kUTTypeImage as String
+        picker.delegate = self
+        if UIImagePickerController.isSourceTypeAvailable(sourceType) {
+            picker.sourceType = sourceType
+            picker.mediaTypes = [mediaTypeImage]
+            if sourceType == .camera {
+                present(picker, animated: true, completion: nil)
+            } else if sourceType == .photoLibrary {
+                // present in popover
+            }
+        }
+    }
+    
+    func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+        // Extract image from info and set imageView
+        picker.presentingViewController?.dismiss(animated: true)
+    }
     
     // MARK: TextView functionality
     
