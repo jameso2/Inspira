@@ -74,49 +74,80 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
     
     private func configureImagePlaceholderView() {
         imagePlaceholderView.layer.cornerRadius = 5.0
-        let tap = UITapGestureRecognizer(target: self, action: #selector(presentAlertToSetImage(recognizer:)))
+        let tap = UITapGestureRecognizer(target: self, action: #selector(presentAlert(recognizer:)))
         imagePlaceholderView.addGestureRecognizer(tap)
     }
     
-    @objc private func presentAlertToSetImage(recognizer: UITapGestureRecognizer) {
+    @objc private func presentAlert(recognizer: UITapGestureRecognizer) {
+        if UIImagePickerController.isSourceTypeAvailable(.camera) || UIImagePickerController.isSourceTypeAvailable(.photoLibrary) {
+            presentAlertToSetImage(recognizer: recognizer)
+        } else {
+            presentErrorAlert()
+        }
+    }
+    
+    private func presentAlertToSetImage(recognizer: UITapGestureRecognizer) {
+        let tapLocation = recognizer.location(in: imagePlaceholderView)
         let alert = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
-        alert.addAction(UIAlertAction(title: "Take Photo",
-                                      style: .default,
-                                      handler: { [weak self] action in
-                                          self?.setImage(from: .camera)
-                                      }
-        ))
-        alert.addAction(UIAlertAction(title: "Choose Photo",
-                                      style: .default,
-                                      handler: { [weak self] action in
-                                          self?.setImage(from: .photoLibrary)
-                                      }
-        ))
+        if UIImagePickerController.isSourceTypeAvailable(.camera) {
+            alert.addAction(UIAlertAction(title: "Take Photo",
+                                          style: .default,
+                                          handler: { [weak self] action in
+                                              self?.setImage(from: .camera)
+                                          }
+            ))
+        }
+        if UIImagePickerController.isSourceTypeAvailable(.photoLibrary) {
+            alert.addAction(UIAlertAction(title: "Choose Photo",
+                                          style: .default,
+                                          handler: { [weak self] action in
+                                              self?.setImage(from: .photoLibrary, tapLocation: tapLocation)
+                                          }
+            ))
+        }
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
         alert.modalPresentationStyle = .popover
         let ppc = alert.popoverPresentationController
         ppc?.sourceView = imagePlaceholderView
-        ppc?.sourceRect = CGRect(origin: recognizer.location(in: imagePlaceholderView), size: CGSize.zero)
+        ppc?.sourceRect = CGRect(origin: tapLocation, size: CGSize.zero)
         present(alert, animated: true, completion: nil)
     }
     
-    private func setImage(from sourceType: UIImagePickerController.SourceType) {
+    private func presentErrorAlert() {
+        let alert = UIAlertController(title: nil, message: nil, preferredStyle: .alert)
+        alert.title = "Camera and Photo Library Unavailable"
+        alert.message = "Your device does not have a camera or photo library for setting the image."
+        alert.addAction(UIAlertAction(title: "Done", style: .default, handler: nil))
+        present(alert, animated: true, completion: nil)
+    }
+    
+    private func setImage(from sourceType: UIImagePickerController.SourceType, tapLocation: CGPoint? = nil) {
         let picker = UIImagePickerController()
         let mediaTypeImage = kUTTypeImage as String
         picker.delegate = self
-        if UIImagePickerController.isSourceTypeAvailable(sourceType) {
-            picker.sourceType = sourceType
-            picker.mediaTypes = [mediaTypeImage]
-            if sourceType == .camera {
-                present(picker, animated: true, completion: nil)
-            } else if sourceType == .photoLibrary {
-                // present in popover
+        picker.sourceType = sourceType
+        picker.mediaTypes = [mediaTypeImage]
+        if sourceType == .photoLibrary {
+            picker.modalPresentationStyle = .popover
+            let ppc = picker.popoverPresentationController
+            ppc?.sourceView = imagePlaceholderView
+            if let sourceRectOrigin = tapLocation {
+                ppc?.sourceRect = CGRect(origin: sourceRectOrigin, size: CGSize.zero)
             }
         }
+        present(picker, animated: true, completion: nil)
     }
     
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
         // Extract image from info and set imageView
+        if let image = info[UIImagePickerController.InfoKey.originalImage] as? UIImage {
+            imageView.image = image
+            imageView.sizeToFit()
+        }
+        picker.presentingViewController?.dismiss(animated: true)
+    }
+    
+    func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
         picker.presentingViewController?.dismiss(animated: true)
     }
     
