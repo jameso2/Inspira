@@ -21,7 +21,7 @@ class Quote: NSManagedObject {
     }
     
     var isEmpty: Bool {
-        if self.text.isEmpty, self.creator.isEmpty, self.descriptionOfHowFound.isEmpty, self.interpretation.isEmpty {
+        if self.text.isEmpty, self.creator.isEmpty, self.descriptionOfHowFound.isEmpty, self.interpretation.isEmpty, self.imageData == nil {
             return true
         }
         return false

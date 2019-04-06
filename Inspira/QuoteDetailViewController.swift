@@ -50,7 +50,14 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
     @IBOutlet private weak var interpretation: UITextView! { didSet { configureTextView(interpretation) } }
     @IBOutlet private weak var interpretationHeight: NSLayoutConstraint!
     
-    @IBOutlet private weak var imageView: UIImageView!
+    @IBOutlet private weak var imageView: UIImageView! {
+        didSet {
+            let longPress = UILongPressGestureRecognizer(target: self, action: #selector(presentAlert(recognizer:)))
+            longPress.minimumPressDuration = 3.0
+            imageView.addGestureRecognizer(longPress)
+        }
+    }
+    @IBOutlet weak var imageViewAspectRatio: NSLayoutConstraint!
     
     @IBOutlet weak var imagePlaceholderView: UIView! {
         didSet {
@@ -62,6 +69,28 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
         didSet {
             if UIDevice().userInterfaceIdiom == .pad {
                 imagePlaceholderViewHeight.constant = 425
+            }
+        }
+    }
+    
+    var quoteImage: UIImage? {
+        get {
+            return imageView.image
+        }
+        set {
+            imageView?.image = newValue
+            imagePlaceholderView?.isHidden = newValue != nil
+            if let newImage = newValue, imageView != nil, imageViewAspectRatio != nil {
+                imageView.removeConstraint(imageViewAspectRatio)
+                let aspectRatio = NSLayoutConstraint(item: imageView!,
+                                                     attribute: .width,
+                                                     relatedBy: .equal,
+                                                     toItem: imageView!,
+                                                     attribute: .height,
+                                                     multiplier: newImage.size.width / newImage.size.height,
+                                                     constant: 0)
+                imageView.addConstraint(aspectRatio)
+                imageViewAspectRatio = aspectRatio
             }
         }
     }
@@ -78,7 +107,7 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
         imagePlaceholderView.addGestureRecognizer(tap)
     }
     
-    @objc private func presentAlert(recognizer: UITapGestureRecognizer) {
+    @objc private func presentAlert(recognizer: UIGestureRecognizer) {
         if UIImagePickerController.isSourceTypeAvailable(.camera) || UIImagePickerController.isSourceTypeAvailable(.photoLibrary) {
             presentAlertToSetImage(recognizer: recognizer)
         } else {
@@ -86,8 +115,8 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
         }
     }
     
-    private func presentAlertToSetImage(recognizer: UITapGestureRecognizer) {
-        let tapLocation = recognizer.location(in: imagePlaceholderView)
+    private func presentAlertToSetImage(recognizer: UIGestureRecognizer) {
+        let gestureLocation = recognizer.location(in: imagePlaceholderView)
         let alert = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
         if UIImagePickerController.isSourceTypeAvailable(.camera) {
             alert.addAction(UIAlertAction(title: "Take Photo",
@@ -101,7 +130,16 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
             alert.addAction(UIAlertAction(title: "Choose Photo",
                                           style: .default,
                                           handler: { [weak self] action in
-                                              self?.setImage(from: .photoLibrary, tapLocation: tapLocation)
+                                              self?.setImage(from: .photoLibrary, gestureLocation: gestureLocation)
+                                          }
+            ))
+        }
+        if recognizer.view == imageView {
+            alert.addAction(UIAlertAction(title: "Delete Photo",
+                                          style: .default,
+                                          handler: { [weak self] action in
+                                              self?.quoteImage = nil
+                                              self?.saveQuote()
                                           }
             ))
         }
@@ -109,7 +147,7 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
         alert.modalPresentationStyle = .popover
         let ppc = alert.popoverPresentationController
         ppc?.sourceView = imagePlaceholderView
-        ppc?.sourceRect = CGRect(origin: tapLocation, size: CGSize.zero)
+        ppc?.sourceRect = CGRect(origin: gestureLocation, size: CGSize.zero)
         present(alert, animated: true, completion: nil)
     }
     
@@ -121,7 +159,7 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
         present(alert, animated: true, completion: nil)
     }
     
-    private func setImage(from sourceType: UIImagePickerController.SourceType, tapLocation: CGPoint? = nil) {
+    private func setImage(from sourceType: UIImagePickerController.SourceType, gestureLocation: CGPoint? = nil) {
         let picker = UIImagePickerController()
         let mediaTypeImage = kUTTypeImage as String
         picker.delegate = self
@@ -131,7 +169,7 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
             picker.modalPresentationStyle = .popover
             let ppc = picker.popoverPresentationController
             ppc?.sourceView = imagePlaceholderView
-            if let sourceRectOrigin = tapLocation {
+            if let sourceRectOrigin = gestureLocation {
                 ppc?.sourceRect = CGRect(origin: sourceRectOrigin, size: CGSize.zero)
             }
         }
@@ -141,8 +179,8 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
         // Extract image from info and set imageView
         if let image = info[UIImagePickerController.InfoKey.originalImage] as? UIImage {
-            imageView.image = image
-            imageView.sizeToFit()
+            quoteImage = image
+            saveQuote()
         }
         picker.presentingViewController?.dismiss(animated: true)
     }
@@ -248,8 +286,9 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
         descriptionOfHowFound?.text = quoteToDisplay?.descriptionOfHowFound
         interpretation?.text = quoteToDisplay?.interpretation
         if let imageData = quoteToDisplay?.imageData {
-            imageView?.image = UIImage(data: imageData)
-            imageView?.sizeToFit()
+            quoteImage = UIImage(data: imageData)
+        } else if !quoteIsMarkedForDeletion { // The deletion animation looks better if the quoteImage is still displayed as the animation occurs
+            quoteImage = nil
         }
         deleteButton?.isEnabled = quoteToDisplay != nil
     }
@@ -296,6 +335,7 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
     }
     
     private func saveQuote() {
+        print("Quote being saved")
         if let context = container?.viewContext {
             if let quoteToUpdate = quoteToDisplay {
                 setAttributes(for: quoteToUpdate, in: context)
@@ -312,6 +352,7 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
         // "Delete" before the quote has even been saved. In that case, quoteToDisplay
         // would be nil, textViewDidEndEditing would be called, and the quote would be
         // saved even though it had been deleted.
+        print("Quote being deleted")
         quoteIsMarkedForDeletion = true
         if let context = container?.viewContext, let quoteToDelete = quoteToDisplay {
             context.delete(quoteToDelete)
@@ -332,8 +373,8 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
                                                                self?.scrollViewContent.alpha = 0
                                                            },
                                                            completion: { [weak self] completed in
-                                                               self?.quoteToDisplay = nextQuoteToDisplay
                                                                self?.quoteIsMarkedForDeletion = false
+                                                               self?.quoteToDisplay = nextQuoteToDisplay
                                                                self?.scrollViewContent.frame = scrollViewContentOriginalFrame
                                                                self?.scrollViewContent.alpha = 1
                                                            }
@@ -344,7 +385,8 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         if allOutletsSet, !quoteIsMarkedForDeletion {
-            if quoteText.isEmpty, creator.isEmpty, descriptionOfHowFound.isEmpty, interpretation.isEmpty {
+            if quoteText.isEmpty, creator.isEmpty, descriptionOfHowFound.isEmpty, interpretation.isEmpty, quoteImage == nil {
+                print("This is where delete quote is called")
                 deleteQuote()
             } else {
                 saveQuote()

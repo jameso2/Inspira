@@ -99,6 +99,7 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
                     addQuote(to: context)
                     tableView.insertRows(at: [IndexPath(row: 0, section: 0)], with: .fade)
                     quoteDetailVC.quoteToDisplay = quotes[0]
+                    indexPathOfQuoteBeingDisplayed = IndexPath(row: 0, section: 0)
                 }
             }
         }
@@ -156,7 +157,9 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
         if let context = container?.viewContext {
             var quoteIndex = indexPath.row // the index path of the selected quote might change after empty quotes are deleted
             findAndDeleteEmptyQuote(from: context, exceptAt: &quoteIndex)
-            performSegue(withIdentifier: "ShowQuoteDetail", sender: IndexPath(row: quoteIndex, section: 0))
+            if splitViewController?.viewControllers.count != 2 || indexPath != indexPathOfQuoteBeingDisplayed {
+                performSegue(withIdentifier: "ShowQuoteDetail", sender: IndexPath(row: quoteIndex, section: 0))
+            }
             if splitViewController?.viewControllers.count == 2 {
                 hideMasterView(delay: 0.8)
             }
@@ -172,6 +175,7 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
                         displayNextQuote(in: quoteDetailVC, deletedQuoteIndexPath: indexPath)
                     } else {
                         quoteDetailVC.animateQuoteDeletion(nextQuoteToDisplay: nil)
+                        indexPathOfQuoteBeingDisplayed = nil
                     }
                 }
             }

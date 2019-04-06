@@ -122,7 +122,11 @@
                                                 <nil key="highlightedColor"/>
                                             </label>
                                             <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" placeholderIntrinsicWidth="240" placeholderIntrinsicHeight="128" translatesAutoresizingMaskIntoConstraints="NO" id="abc-MO-XJR">
-                                                <rect key="frame" x="87" y="445" width="240" height="250"/>
+                                                <rect key="frame" x="140.33333333333331" y="445" width="133.33333333333331" height="250"/>
+                                                <constraints>
+                                                    <constraint firstAttribute="width" priority="750" constant="700" id="5j6-wu-0GD"/>
+                                                    <constraint firstAttribute="height" secondItem="abc-MO-XJR" secondAttribute="width" multiplier="15:8" id="S0o-QB-8I1"/>
+                                                </constraints>
                                             </imageView>
                                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Please enter a quote." textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="seS-fm-a3L">
                                                 <rect key="frame" x="20" y="87" width="162" height="21"/>
@@ -193,6 +197,7 @@
                                             <constraint firstItem="YbE-Bt-Tp4" firstAttribute="leading" secondItem="D0d-Qz-akh" secondAttribute="leading" id="6cX-22-uq9"/>
                                             <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="WV0-Zx-VCc" secondAttribute="trailing" id="7hP-s6-U0k"/>
                                             <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="D0d-Qz-akh" secondAttribute="trailing" id="9no-Cp-n8a"/>
+                                            <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="abc-MO-XJR" secondAttribute="trailing" constant="20" symbolic="YES" id="Dte-0R-R10"/>
                                             <constraint firstItem="RYq-Vq-kqx" firstAttribute="trailing" secondItem="YbE-Bt-Tp4" secondAttribute="trailing" id="FdS-Yh-eTD"/>
                                             <constraint firstAttribute="bottom" secondItem="W3T-Mb-Ari" secondAttribute="bottom" constant="20" symbolic="YES" id="JLz-Lm-Dtd"/>
                                             <constraint firstItem="3qV-LB-bCb" firstAttribute="trailing" secondItem="oqc-Lh-5X9" secondAttribute="trailing" id="JNV-Xn-hqh"/>
@@ -224,7 +229,7 @@
                                             <constraint firstItem="oqc-Lh-5X9" firstAttribute="leading" secondItem="LpD-Ji-dql" secondAttribute="leading" id="vpJ-3R-BeC"/>
                                             <constraint firstItem="oqc-Lh-5X9" firstAttribute="leading" secondItem="seS-fm-a3L" secondAttribute="leading" id="w13-na-QvE"/>
                                             <constraint firstItem="YbE-Bt-Tp4" firstAttribute="top" secondItem="D0d-Qz-akh" secondAttribute="bottom" constant="8" symbolic="YES" id="x2V-2Y-Inw"/>
-                                            <constraint firstAttribute="bottom" secondItem="abc-MO-XJR" secondAttribute="bottom" constant="20" symbolic="YES" id="xHC-Ey-5gw"/>
+                                            <constraint firstAttribute="bottom" relation="greaterThanOrEqual" secondItem="abc-MO-XJR" secondAttribute="bottom" constant="20" symbolic="YES" id="xHC-Ey-5gw"/>
                                             <constraint firstItem="fxp-1x-bZq" firstAttribute="top" secondItem="3qV-LB-bCb" secondAttribute="bottom" constant="30" id="xhP-Lz-SOd"/>
                                             <constraint firstItem="LpD-Ji-dql" firstAttribute="top" secondItem="oqc-Lh-5X9" secondAttribute="bottom" constant="30" id="xkH-qT-u54"/>
                                             <constraint firstItem="KY9-Ny-ltM" firstAttribute="top" secondItem="GZB-aR-Gje" secondAttribute="top" constant="20" symbolic="YES" id="zTM-Mk-uYE"/>
@@ -265,6 +270,7 @@
                         <outlet property="imagePlaceholderView" destination="W3T-Mb-Ari" id="RDf-A1-Rsb"/>
                         <outlet property="imagePlaceholderViewHeight" destination="9cO-M2-DZ9" id="LqG-Fe-jCb"/>
                         <outlet property="imageView" destination="abc-MO-XJR" id="YR8-64-ovS"/>
+                        <outlet property="imageViewAspectRatio" destination="S0o-QB-8I1" id="kEI-e4-8rZ"/>
                         <outlet property="interpretation" destination="YbE-Bt-Tp4" id="UcD-CA-Pk0"/>
                         <outlet property="interpretationHeight" destination="zxJ-pt-vGv" id="CuZ-jg-hfg"/>
                         <outlet property="quoteRequirementMessage" destination="seS-fm-a3L" id="vyv-5r-Pg7"/>
