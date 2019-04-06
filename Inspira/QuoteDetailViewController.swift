@@ -385,7 +385,6 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
         super.viewWillDisappear(animated)
         if allOutletsSet, !quoteIsMarkedForDeletion {
             if quoteText.isEmpty, creator.isEmpty, descriptionOfHowFound.isEmpty, interpretation.isEmpty, quoteImage == nil {
-                print("This is where delete quote is called")
                 deleteQuote()
             } else {
                 saveQuote()
