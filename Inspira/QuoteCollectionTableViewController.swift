@@ -125,6 +125,11 @@ class QuoteCollectionTableViewController: UITableViewController, UISplitViewCont
         }
     }
     
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        navigationController?.view.setNeedsDisplay()
+        navigationController?.view.setNeedsLayout()
+    }
+    
     override func awakeFromNib() {
         splitViewController?.delegate = self
         navigationItem.title = "Quotes"

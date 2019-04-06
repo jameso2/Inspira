@@ -237,6 +237,7 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
     private func resize(_ textView: UITextView) {
         let sizeThatFits = textView.sizeThatFits(CGSize(width: textView.frame.width, height: Constants.maxTextViewHeight))
         let newHeight = min(sizeThatFits.height, Constants.maxTextViewHeight)
+        textView.isScrollEnabled = newHeight == Constants.maxTextViewHeight
         switch textView {
         case quoteText: quoteTextHeight.constant = newHeight
         case creator: creatorHeight.constant = newHeight
@@ -335,7 +336,6 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
     }
     
     private func saveQuote() {
-        print("Quote being saved")
         if let context = container?.viewContext {
             if let quoteToUpdate = quoteToDisplay {
                 setAttributes(for: quoteToUpdate, in: context)
@@ -352,7 +352,6 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
         // "Delete" before the quote has even been saved. In that case, quoteToDisplay
         // would be nil, textViewDidEndEditing would be called, and the quote would be
         // saved even though it had been deleted.
-        print("Quote being deleted")
         quoteIsMarkedForDeletion = true
         if let context = container?.viewContext, let quoteToDelete = quoteToDisplay {
             context.delete(quoteToDelete)
@@ -364,7 +363,7 @@ class QuoteDetailViewController: UIViewController, UITextViewDelegate, UITextFie
     func animateQuoteDeletion(nextQuoteToDisplay: Quote?) {
         if let deleteButtonView = deleteButton.value(forKey: "view") as? UIView {
             let scrollViewContentOriginalFrame = scrollViewContent.frame
-            let newOrigin = deleteButtonView.superview!.convert(deleteButtonView.frame.origin, to: scrollViewContent.superview)
+            let newOrigin = deleteButtonView.superview!.convert(deleteButtonView.frame.origin, to: scrollViewContent.superview!)
             UIViewPropertyAnimator.runningPropertyAnimator(withDuration: 0.6,
                                                            delay: 0,
                                                            options: [.curveEaseInOut],
