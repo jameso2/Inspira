@@ -276,6 +276,7 @@
                         <outlet property="quoteRequirementMessage" destination="seS-fm-a3L" id="vyv-5r-Pg7"/>
                         <outlet property="quoteText" destination="oqc-Lh-5X9" id="Gam-ld-E3z"/>
                         <outlet property="quoteTextHeight" destination="QMj-kh-OXN" id="Lan-eO-1ly"/>
+                        <outlet property="quoteTextLabel" destination="KY9-Ny-ltM" id="ga9-vE-XTw"/>
                         <outlet property="scrollViewContent" destination="GZB-aR-Gje" id="sf8-kA-88D"/>
                     </connections>
                 </viewController>
